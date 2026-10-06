@@ -1,6 +1,6 @@
 {
   "name": "agentfaces",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Expressive faces for AI agents. Work states like thinking, working, needs you and done, for React, React Native and plain SVG.",
   "keywords": [
     "ai",
