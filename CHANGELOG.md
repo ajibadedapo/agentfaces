@@ -1,5 +1,11 @@
 # agentfaces
 
+## 0.2.1
+
+### Patch Changes
+
+- [#10](https://github.com/ajibadedapo/agentfaces/pull/10) [`d78c497`](https://github.com/ajibadedapo/agentfaces/commit/d78c497151f1dbe75befba668b8c295645d01bf0) Thanks [@ajibadedapo](https://github.com/ajibadedapo)! - Unknown `state`, `shape` and `expression` names no longer crash a face. They fall back (`idle`, the seeded shape, the state's own expressions; `circle` in `renderFaceSvg` and `buildFaceSet`) and, in development only, warn once with a "did you mean" suggestion, for example `unknown state "needs_you". Did you mean "needs-you"?`. The core exports `checkState`, `checkShape`, `checkExpression`, `suggestName` and `unknownNameMessage`. Also: `llms.txt`, `llms-full.txt`, `AGENTS.md`, a Claude Code skill, a shadcn registry item and more npm keywords so AI coding agents find and use the library correctly.
+
 ## 0.2.0
 
 ### Minor Changes
