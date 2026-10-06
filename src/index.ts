@@ -17,5 +17,6 @@ export * from "./core/glyph";
 export * from "./core/morph";
 export * from "./core/audio";
 export * from "./core/voice";
+export * from "./core/names";
 export { hashSeed, createRng, type Rng } from "./core/random";
 export { flattenPath, pointInPolygons, distanceToOutline, pathNumbers, type Point, type Polygon } from "./core/path";

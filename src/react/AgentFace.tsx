@@ -313,8 +313,8 @@ const SVG_STYLE: CSSProperties = { display: "block", overflow: "visible" };
 export function AgentFace(props: AgentFaceProps) {
   const theme = useAgentFacesTheme();
   const face = resolveFace(props, theme);
-  const { state, shape: finalShape, color: finalColor, seed, size, variant, mouth, accessibleName, reducedMotion, palette } = face;
-  const { expression, decorative = false, className, style } = props;
+  const { state, shape: finalShape, color: finalColor, seed, size, variant, mouth, accessibleName, reducedMotion, palette, expression } = face;
+  const { decorative = false, className, style } = props;
   const prefersReduced = usePrefersReducedMotion(variant === "live" && reducedMotion === undefined);
   const live = variant === "live" && !(reducedMotion ?? prefersReduced);
   const ornament = STATE_ORNAMENT[state];

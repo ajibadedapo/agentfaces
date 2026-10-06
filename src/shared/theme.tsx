@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { DEFAULT_PALETTE, faceFor, STATE_LABEL, type AgentState, type ShapeName } from "agentfaces";
+import { checkExpression, checkShape, checkState, DEFAULT_PALETTE, faceFor, STATE_LABEL, type AgentState, type ExpressionName, type ShapeName } from "agentfaces";
 
 export interface AgentFacesTheme {
   /** Shapes that seeded faces are picked from. Defaults to circle, triangle and square. */
@@ -56,6 +56,7 @@ export interface BaseFaceProps {
   label?: string;
   name?: string;
   reducedMotion?: boolean;
+  expression?: ExpressionName;
 }
 
 export interface ResolvedFace {
@@ -69,17 +70,19 @@ export interface ResolvedFace {
   accessibleName: string;
   reducedMotion: boolean | undefined;
   palette: readonly string[];
+  expression: ExpressionName | undefined;
 }
 
 export function resolveFace(props: BaseFaceProps, theme: AgentFacesTheme): ResolvedFace {
-  const state = props.state ?? "idle";
+  const state = checkState(props.state);
+  const shape = checkShape(props.shape);
   const seed = props.seed ?? "";
   const palette = theme.palette && theme.palette.length ? theme.palette : DEFAULT_PALETTE;
-  const picked = props.shape && props.color ? null : faceFor(seed, { shapes: theme.shapes, palette });
+  const picked = shape && props.color ? null : faceFor(seed, { shapes: theme.shapes, palette });
   const stateName = theme.labels?.[state] ?? STATE_LABEL[state];
   return {
     state,
-    shape: props.shape ?? picked!.shape,
+    shape: shape ?? picked!.shape,
     color: props.color ?? picked!.color,
     seed,
     size: props.size ?? theme.size ?? 48,
@@ -88,5 +91,6 @@ export function resolveFace(props: BaseFaceProps, theme: AgentFacesTheme): Resol
     accessibleName: props.label ?? (props.name ? `${props.name}, ${stateName}` : stateName),
     reducedMotion: props.reducedMotion ?? theme.reducedMotion,
     palette,
+    expression: checkExpression(props.expression),
   };
 }

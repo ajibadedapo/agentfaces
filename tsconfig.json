@@ -16,8 +16,9 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "agentfaces": ["./src/index.ts"]
+      "agentfaces": ["./src/index.ts"],
+      "agentfaces/react": ["./src/react/index.ts"]
     }
   },
-  "include": ["src", "scripts", "*.config.ts"]
+  "include": ["src", "scripts", "registry", "*.config.ts"]
 }

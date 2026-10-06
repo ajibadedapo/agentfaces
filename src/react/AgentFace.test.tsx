@@ -338,3 +338,17 @@ describe("AgentFace web", () => {
     expect(container.querySelector("style")?.textContent).toContain("@keyframes af-confetti");
   });
 });
+
+describe("unknown names", () => {
+  it("renders the fallback face and warns with a suggestion instead of throwing", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(<AgentFace state={"needs_you" as never} shape={"sqaure" as never} expression={"chearing" as never} seed="ada" />);
+    const root = container.querySelector("[data-agentface]")!;
+    expect(root.getAttribute("data-af-state")).toBe("idle");
+    expect(root.getAttribute("aria-label")).toBe(STATE_LABEL.idle);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Did you mean "needs-you"?'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Did you mean "square"?'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Did you mean "cheering"?'));
+    warn.mockRestore();
+  });
+});

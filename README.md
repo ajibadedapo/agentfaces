@@ -165,6 +165,29 @@ Adapters have no runtime dependencies and import nothing from the SDKs. They rea
 
 Below 64 px the face grows inside the body and simplifies. From 36 px down the eyes become solid ink on a pixel grid and the mouth gets a full-pixel line, so 24 px avatars still read as faces.
 
+## shadcn/ui
+
+```sh
+npx shadcn@latest add https://ajibadedapo.github.io/agentfaces/r/agent-face.json
+```
+
+Adds `components/agent-face.tsx`, a client component with `AgentFace` and `AgentStatus` (a face with a text label), and installs `agentfaces`.
+
+## Using with AI coding agents
+
+- [`llms.txt`](https://ajibadedapo.github.io/agentfaces/llms.txt) and [`llms-full.txt`](https://ajibadedapo.github.io/agentfaces/llms-full.txt): the full API reference and recipes in plain markdown, for pasting into a prompt or pointing a tool at.
+- [`AGENTS.md`](./AGENTS.md): imports per platform, the state vocabulary, recipes and pitfalls.
+- A [Claude Code skill](./skills/agentfaces/SKILL.md). Install it in a project with:
+
+  ```sh
+  mkdir -p .claude/skills/agentfaces
+  curl -fsSL https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/skills/agentfaces/SKILL.md -o .claude/skills/agentfaces/SKILL.md
+  ```
+
+  Or copy `skills/agentfaces` into `~/.claude/skills/` to use it in every project.
+
+Unknown state, shape and expression names never throw: the face falls back and, in development, warns with the fix, for example `unknown state "needs_you". Did you mean "needs-you"?`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md). `node scripts/record-demo.mjs` re-records the demo at the top of this README from `docs/demo.html` (needs Playwright and ffmpeg). Releases are automated with changesets and published from CI with npm provenance.
