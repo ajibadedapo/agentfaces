@@ -37,7 +37,7 @@ npm run size
 
 ## Releasing
 
-Versions are managed with [changesets](https://github.com/changesets/changesets). If your change affects users, run `npx changeset` and commit the generated file. When changes land on `main`, a release pull request is opened automatically. Merging it publishes to npm with provenance.
+Versions are managed with [changesets](https://github.com/changesets/changesets). If your change affects users, run `npx changeset` and commit the generated file. When changes land on `main`, the release workflow opens a release pull request, runs the full check suite on it, merges it and publishes to npm with provenance, then tags the version and creates the GitHub release. No manual step is needed.
 
 ## Code of conduct
 
