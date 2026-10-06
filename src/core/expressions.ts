@@ -27,6 +27,8 @@ export const EXPRESSION_NAMES = [
   "downcast",
   "weary",
   "drowsy",
+  "heedful",
+  "chatty",
 ] as const;
 
 export type ExpressionName = (typeof EXPRESSION_NAMES)[number];
@@ -77,6 +79,8 @@ export const EXPRESSIONS: Record<ExpressionName, FaceParams> = {
   uneasy: face({ ...eyes({ slant: -6, h: 21.5, lidTop: 0.2, bowTop: -0.5, lidSlant: -0.6, pupil: 0.52 }), mouth: { width: 14, curve: -0.35, open: 0.1 }, gazeY: -0.2 }),
   downcast: face({ ...eyes({ slant: -8, lidTop: 0.3, bowTop: 0.6, lidSlant: -0.5, pupil: 0.6, dy: 1 }), mouth: { width: 13, curve: -0.65, dy: 1.5 }, gazeY: 0.3 }),
   weary: face({ ...eyes({ lidTop: 0.5, bowTop: 0, glint: 0.5 }), mouth: { width: 13, curve: -0.1 }, gazeX: 0.6 }),
+  heedful: face({ ...eyes({ h: 23.5, pupil: 0.62, lidTop: 0.02, bowTop: 0.4, lidBottom: 0.06, bowBottom: 1, dy: -0.5 }), mouth: { width: 9, curve: 0.3 } }),
+  chatty: face({ ...eyes({ lidBottom: 0.2, bowBottom: 1, pupil: 0.6 }), mouth: { width: 16, curve: 0.5, open: 0.34 } }),
   drowsy: face({ ...eyes({ lidTop: 0.56, bowTop: 0.3, pupil: 0.52, glint: 0.3, dy: 1 }), mouth: { width: 9, curve: 0.1, dy: 1 }, gazeY: 0.5 }),
 };
 

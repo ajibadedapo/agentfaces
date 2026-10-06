@@ -27,6 +27,8 @@ export const LANDING_IMPULSE = 2.6;
 export const CROUCH = { share: 0.12, squash: -0.09 } as const;
 export const HOP_HEIGHT = 11;
 export const BOB_HEIGHT = 7;
+export const LEAN = { size: 1.035, sink: 1.6, tilt: -2.5, breath: 0.008, pulse: 0.05 } as const;
+export const TALK = { nod: 2.6, swell: 0.022, sway: 1.4, breath: 0.01 } as const;
 
 const TAU = Math.PI * 2;
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
@@ -67,7 +69,7 @@ export class BodyPerformer {
     this.finished = false;
   }
 
-  update(now: number, dt: number): BodyPose {
+  update(now: number, dt: number, level = 0): BodyPose {
     if (this.start < 0) this.start = now;
     const elapsed = now - this.start;
     const cycles = elapsed / this.duration + this.phaseOffset * (this.loop ? 1 : 0);
@@ -103,6 +105,16 @@ export class BodyPerformer {
           targets.turn = wave;
           targets.swayX = 3 * wave;
           targets.rotate = 4 * wave;
+          break;
+        case "lean":
+          targets.size = LEAN.size + LEAN.breath * wave + LEAN.pulse * clamp(level, 0, 1);
+          targets.lift = LEAN.sink;
+          targets.rotate = LEAN.tilt;
+          break;
+        case "talk":
+          targets.size = 1 + TALK.breath * wave + TALK.swell * clamp(level, 0, 1);
+          targets.lift = -TALK.nod * clamp(level, 0, 1);
+          targets.rotate = TALK.sway * wave;
           break;
       }
     }

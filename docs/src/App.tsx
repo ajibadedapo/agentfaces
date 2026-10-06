@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { AGENT_STATES, CORE_STATES, DEFAULT_PALETTE, EXPRESSION_NAMES, EXTENDED_STATES, ORNAMENT_STATES, SHAPE_NAMES, STATE_LABEL, type AgentState, type ExpressionName, type ShapeName } from "agentfaces";
+import { AGENT_STATES, CORE_STATES, DEFAULT_PALETTE, EXPRESSION_NAMES, EXTENDED_STATES, ORNAMENT_STATES, SHAPE_NAMES, STATE_LABEL, VOICE_STATES, type AgentState, type ExpressionName, type ShapeName } from "agentfaces";
 import { AgentFace } from "agentfaces/react";
 import { renderFaceSvg } from "agentfaces/svg";
-import { FACE_FOR, INSTALL, NATIVE_QUICK, PROVIDER, REACT_QUICK, SVG_QUICK } from "./snippets";
+import { FACE_FOR, INSTALL, NATIVE_QUICK, PROVIDER, REACT_QUICK, SVG_QUICK, VOICE_ELEVENLABS, VOICE_LIVEKIT, VOICE_NATIVE, VOICE_OPENAI, VOICE_REACT } from "./snippets";
+import { VoiceDemos } from "./voice";
 
 const GITHUB = "https://github.com/ajibadedapo/agentfaces";
 
@@ -186,6 +187,7 @@ function Gallery() {
     { title: "Core work states", states: CORE_STATES },
     { title: "Extended states", states: EXTENDED_STATES },
     { title: "Ornament states", states: ORNAMENT_STATES },
+    { title: "Voice states", states: VOICE_STATES },
   ];
   return (
     <section id="states">
@@ -223,6 +225,39 @@ function Gallery() {
   );
 }
 
+type VoiceTab = "react" | "livekit" | "openai" | "elevenlabs" | "native";
+
+const VOICE_TABS: Array<[VoiceTab, string, string, string]> = [
+  ["react", "React", VOICE_REACT, "useAudioLevel turns a MediaStream, AudioNode, media element, level callback or level stream into a smoothed level. Every face reads it from the shared ticker."],
+  ["livekit", "LiveKit", VOICE_LIVEKIT, "liveKitFace maps the agent state from useVoiceAssistant to a face state and uses the agent's audio track while speaking. Pass { microphone } to pulse with the user while listening."],
+  ["openai", "OpenAI Realtime", VOICE_OPENAI, "bindRealtimeSession follows Realtime events: speech started is listening, a response is thinking, tool calls are working, output audio is speaking. Over WebRTC, pass the audio element as audio."],
+  ["elevenlabs", "ElevenLabs", VOICE_ELEVENLABS, "elevenLabsFace maps status and mode to a face state and reads the conversation's input or output volume and frequency data each frame."],
+  ["native", "React Native", VOICE_NATIVE, "React Native has no Web Audio, so pass a level callback or push numbers into createLevelFeed from your recorder or player meter."],
+];
+
+function Voice() {
+  const [tab, setTab] = useState<VoiceTab>("react");
+  const current = VOICE_TABS.find(([id]) => id === tab)!;
+  return (
+    <section id="voice">
+      <h2>Voice agents</h2>
+      <p>
+        Two states for voice: <code>listening</code> leans in, holds its gaze on you and pulses with your voice, and <code>speaking</code> moves its mouth with the agent's audio, opening with loudness and spreading or rounding with the sound. Pass audio as <code>audio</code>. Under reduced motion and in the still variant the face rests and no audio is read.
+      </p>
+      <VoiceDemos />
+      <div className="tabs" role="tablist">
+        {VOICE_TABS.map(([id, title]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "tab active" : "tab"} onClick={() => setTab(id)}>
+            {title}
+          </button>
+        ))}
+      </div>
+      <Code>{current[2]}</Code>
+      <p className="note">{current[3]}</p>
+    </section>
+  );
+}
+
 const PROPS: Array<[string, string, string, string]> = [
   ["state", "AgentState", '"idle"', "What the agent is doing. Drives motion, expressions, glyph morphs and the accessible name."],
   ["shape", '"circle" | "triangle" | "square"', "from seed", "Body shape."],
@@ -235,7 +270,8 @@ const PROPS: Array<[string, string, string, string]> = [
   ["label", "string", "state name", "Full accessible name."],
   ["name", "string", "", 'Agent name. The accessible name becomes "name, state".'],
   ["decorative", "boolean", "false", "Hides the face from assistive technology."],
-  ["reducedMotion", "boolean", "OS setting", "Force reduced motion on or off. Reduced motion renders a resting face with no blinks, morphs or confetti."],
+  ["reducedMotion", "boolean", "OS setting", "Force reduced motion on or off. Reduced motion renders a resting face with no blinks, morphs, confetti or audio-driven motion."],
+  ["audio", "AudioLevelSource | null", "synthetic when speaking", "Audio for listening and speaking: a MediaStream, AudioNode, HTMLMediaElement, level callback, level stream or AudioLevel. React Native takes callbacks, streams and levels. null keeps the mouth still."],
   ["className, style", "", "", "Web only. Applied to the wrapping span."],
 ];
 
@@ -318,6 +354,21 @@ function Api() {
           <code>buildFaceSet(shape, color)</code> returns every state and expression as files, a <code>sprite.svg</code> of symbols and a manifest. Bodies default to <code>currentColor</code>.
         </li>
       </ul>
+      <h3>Voice</h3>
+      <ul>
+        <li>
+          <code>createAudioLevel(source, options)</code> returns an <code>AudioLevel</code> with <code>value</code>, <code>bands</code>, <code>update(now)</code> and <code>close()</code>. Options: <code>attack</code>, <code>release</code>, <code>gain</code>, <code>floorDb</code>, <code>ceilingDb</code>, <code>bands</code>, <code>context</code>. It never schedules work of its own.
+        </li>
+        <li>
+          <code>mouthForLevel(level, bands)</code> maps a level and optional low, mid and high bands to mouth openness and width. <code>MouthModel</code> adds attack and release smoothing.
+        </li>
+        <li>
+          <code>createLevelFeed()</code> is a numeric stream you push into. <code>createSyntheticVoice(seed)</code> is a seeded speech-like level for demos and tests.
+        </li>
+        <li>
+          Adapters: <code>agentfaces/livekit</code>, <code>agentfaces/openai-realtime</code> and <code>agentfaces/elevenlabs</code>. Each is a separate entry with no runtime dependencies.
+        </li>
+      </ul>
       <h3>
         Core: <code>agentfaces</code>
       </h3>
@@ -339,6 +390,7 @@ export function App() {
         <div>
           <a href="#quick-start">Quick start</a>
           <a href="#playground">Playground</a>
+          <a href="#voice">Voice</a>
           <a href="#states">States</a>
           <a href="#examples">Examples</a>
           <a href="#api">API</a>
@@ -349,6 +401,7 @@ export function App() {
         <Hero />
         <QuickStart />
         <Playground />
+        <Voice />
         <Gallery />
         <Examples />
         <Api />

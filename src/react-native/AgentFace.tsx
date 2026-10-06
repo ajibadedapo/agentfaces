@@ -32,6 +32,12 @@ import {
   glyphKindsFor,
   GLYPHS,
   HEAD_FOLLOW,
+  applyVoice,
+  isVoiceState,
+  LEAN,
+  MouthModel,
+  TALK,
+  VOICE_MOUTH,
   morphKeyframes,
   MOUTH_OFFSET_Y,
   restExpression,
@@ -46,6 +52,9 @@ import {
   TURN_SHIFT,
   TURN_SPRING,
   type AgentState,
+  type AudioLevel,
+  type LevelCallback,
+  type LevelStream,
   type MotionKind,
   type ConfettiPiece,
   type Cue,
@@ -62,7 +71,8 @@ import {
   warmMorphs,
 } from "agentfaces";
 import { resolveFace, useAgentFacesTheme } from "../shared/theme";
-import { nativeTicker } from "./ticker";
+import { useFaceLevel } from "../shared/audio";
+import { NATIVE_TICK_MS, nativeTicker } from "./ticker";
 import { useReducedMotion } from "./useReducedMotion";
 
 export interface AgentFaceProps {
@@ -90,8 +100,18 @@ export interface AgentFaceProps {
   decorative?: boolean;
   /** Forces reduced motion on or off. Follows the OS setting when unset. */
   reducedMotion?: boolean;
+  /**
+   * Audio level for the voice states: a level callback, a level stream (see createLevelFeed) or an AudioLevel.
+   * React Native has no Web Audio, so feed it from your audio library's meter. When speaking with no audio set,
+   * the mouth follows a synthetic voice. Pass null for a still mouth.
+   */
+  audio?: NativeAudioSource | null;
   testID?: string;
 }
+
+export type NativeAudioSource = LevelCallback | LevelStream | AudioLevel;
+
+const VOICE_OPEN_STOPS = [0, 0.25, 0.5, 0.75, 1] as const;
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -145,6 +165,19 @@ function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyVa
     case "squash":
       cycle = Animated.sequence([spring(v.squash, -0.11, BODY_SPRINGS.squash), spring(v.squash, 0.07, BODY_SPRINGS.squash)]);
       break;
+    case "lean":
+      cycle = Animated.sequence([
+        Animated.parallel([spring(v.scale, LEAN.size, BODY_SPRINGS.size), spring(v.lift, LEAN.sink, BODY_SPRINGS.lift), spring(v.rotate, LEAN.tilt, BODY_SPRINGS.sway)]),
+        timing(v.scale, LEAN.size + LEAN.breath, duration / 2),
+        timing(v.scale, LEAN.size - LEAN.breath, duration / 2),
+      ]);
+      break;
+    case "talk":
+      cycle = Animated.parallel([
+        Animated.sequence([timing(v.rotate, TALK.sway, duration / 2), timing(v.rotate, -TALK.sway, duration / 2)]),
+        Animated.sequence([timing(v.scale, 1 + TALK.breath, duration / 2), timing(v.scale, 1 - TALK.breath, duration / 2)]),
+      ]);
+      break;
     case "turn":
       cycle = Animated.sequence([
         Animated.parallel([spring(v.turn, 1, BODY_SPRINGS.turn), spring(turnJs, 1, BODY_SPRINGS.turn, false)]),
@@ -155,17 +188,20 @@ function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyVa
   return loop ? Animated.loop(cycle) : Animated.sequence([cycle, Animated.parallel([spring(v.lift, 0, BODY_SPRINGS.lift), spring(v.squash, 0, BODY_SPRINGS.squash), spring(v.rotate, 0, BODY_SPRINGS.sway), spring(v.scale, 1, BODY_SPRINGS.size), spring(v.turn, 0, BODY_SPRINGS.turn), spring(turnJs, 0, BODY_SPRINGS.turn, false)])]);
 }
 
-function bodyTransform(v: BodyValues, size: number, bottom: number) {
+function bodyTransform(v: BodyValues, size: number, bottom: number, voice: Animated.Value, state: AgentState) {
   const unit = size / 100;
   const pivot = (bottom / 100 - 0.5) * size;
   const vertical = v.squash;
+  const nod = state === "speaking" ? -TALK.nod : 0;
+  const swell = state === "speaking" ? TALK.swell : state === "listening" ? LEAN.pulse : 0;
+  const scale = swell ? Animated.multiply(v.scale, Animated.add(1, Animated.multiply(voice, swell))) : v.scale;
   return [
     { translateX: Animated.multiply(v.turn, 3 * unit) },
-    { translateY: Animated.multiply(v.lift, unit) },
+    { translateY: nod ? Animated.add(Animated.multiply(v.lift, unit), Animated.multiply(voice, nod * unit)) : Animated.multiply(v.lift, unit) },
     { rotate: Animated.add(v.rotate, Animated.multiply(v.turn, 4)).interpolate({ inputRange: [-30, 30], outputRange: ["-30deg", "30deg"] }) },
     { translateY: pivot },
-    { scaleX: Animated.multiply(v.scale, Animated.add(1, Animated.multiply(vertical, -0.6))) },
-    { scaleY: Animated.multiply(v.scale, Animated.add(1, vertical)) },
+    { scaleX: Animated.multiply(scale, Animated.add(1, Animated.multiply(vertical, -0.6))) },
+    { scaleY: Animated.multiply(scale, Animated.add(1, vertical)) },
     { translateY: -pivot },
   ];
 }
@@ -206,6 +242,7 @@ interface LiveFaceProps {
   expression: ExpressionName | null;
   mouth: boolean;
   turn: Animated.Value;
+  voiceOpen: Animated.Value | null;
   onExpression?: (name: ExpressionName) => void;
 }
 
@@ -237,7 +274,7 @@ function LiveEye({ from, to, shutLid, side, progress, blink, gaze, head, gazeBia
   );
 }
 
-function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, onExpression }: LiveFaceProps) {
+function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voiceOpen, onExpression }: LiveFaceProps) {
   const onExpressionRef = useRef(onExpression);
   onExpressionRef.current = onExpression;
   const clipId = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -356,6 +393,19 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, onEx
   const shift = Animated.multiply(headTurn, TURN_SHIFT * anchor.scale);
   const lerp = (a: number, b: number) => progress.interpolate({ inputRange: [0, 1], outputRange: [a, b] });
   const lerpMouth = (a: number, b: number) => mouthProgress.interpolate({ inputRange: [0, 1], outputRange: [a, b] });
+  const voiceMouth = useMemo(() => {
+    if (!voiceOpen) return null;
+    const stops = VOICE_OPEN_STOPS.map((share) => {
+      const open = share * VOICE_MOUTH.maxOpen;
+      return faceGeometry(applyVoice(faces.to, "speaking", share, { open, width: 1 - open * VOICE_MOUTH.jawNarrow }), anchor).mouth;
+    });
+    const input = VOICE_OPEN_STOPS.map((share) => share * VOICE_MOUTH.maxOpen);
+    return {
+      d: voiceOpen.interpolate({ inputRange: input, outputRange: stops.map((m) => m.d), extrapolate: "clamp" }),
+      stroke: voiceOpen.interpolate({ inputRange: input, outputRange: stops.map((m) => m.stroke), extrapolate: "clamp" }),
+      opacity: stops[0].opacity,
+    };
+  }, [voiceOpen, faces.to, anchor]);
   return (
     <AnimatedG x={shift}>
       <AnimatedG opacity={lerp(from.blush.opacity, to.blush.opacity)}>
@@ -364,7 +414,8 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, onEx
       </AnimatedG>
       <LiveEye from={from.left} to={to.left} shutLid={shut.left.lidTop} side={-1} progress={progress} blink={blink} gaze={gaze} head={headTurn} gazeBiasFrom={[faces.from.gazeX, faces.from.gazeY]} gazeBiasTo={[faces.to.gazeX, faces.to.gazeY]} lid={color} clipId={`af${clipId}l`} />
       <LiveEye from={from.right} to={to.right} shutLid={shut.right.lidTop} side={1} progress={progress} blink={blink} gaze={gaze} head={headTurn} gazeBiasFrom={[faces.from.gazeX, faces.from.gazeY]} gazeBiasTo={[faces.to.gazeX, faces.to.gazeY]} lid={color} clipId={`af${clipId}r`} />
-      {mouth ? (
+      {mouth && voiceMouth ? <AnimatedPath d={voiceMouth.d} fill={FACE_COLORS.mouth} stroke={FACE_COLORS.mouth} strokeWidth={voiceMouth.stroke} strokeLinejoin="round" strokeLinecap="round" opacity={voiceMouth.opacity} /> : null}
+      {mouth && !voiceMouth ? (
         <AnimatedPath d={mouthProgress.interpolate({ inputRange: [0, 1], outputRange: [from.mouth.d, to.mouth.d] })} fill={FACE_COLORS.mouth} stroke={FACE_COLORS.mouth} strokeWidth={lerpMouth(from.mouth.stroke, to.mouth.stroke)} strokeLinejoin="round" strokeLinecap="round" opacity={lerpMouth(from.mouth.opacity, to.mouth.opacity)} />
       ) : null}
     </AnimatedG>
@@ -576,6 +627,46 @@ export function AgentFace(props: AgentFaceProps) {
   const a11y = decorative ? ({ accessible: false, importantForAccessibility: "no-hide-descendants" } as const) : ({ accessible: true, accessibilityRole: "image", accessibilityLabel: accessibleName } as const);
   const body = useBodyValues();
   const turnJs = useRef(new Animated.Value(0)).current;
+  const voiceBody = useRef(new Animated.Value(0)).current;
+  const voiceOpen = useRef(new Animated.Value(0)).current;
+  const voice = isVoiceState(state);
+  const levelRef = useFaceLevel(live && voice, state === "speaking", props.audio, seed);
+  const [voiceDriven, setVoiceDriven] = useState(false);
+
+  useEffect(() => {
+    if (!live || !voice) {
+      setVoiceDriven(false);
+      voiceBody.setValue(0);
+      voiceOpen.setValue(0);
+      return;
+    }
+    const mouthModel = new MouthModel();
+    let last = 0;
+    let driven = false;
+    const running: Animated.CompositeAnimation[] = [];
+    const off = nativeTicker.subscribe((now, dt) => {
+      const level = levelRef.current;
+      if (!level) return;
+      if (!driven) {
+        driven = true;
+        setVoiceDriven(true);
+      }
+      const amount = level.update(now);
+      const shape = state === "speaking" ? mouthModel.update(amount, level.bands, dt) : null;
+      if (Math.abs(amount - last) < 0.004 && !shape) return;
+      last = amount;
+      for (const animation of running.splice(0)) animation.stop();
+      const step = [Animated.timing(voiceBody, { toValue: amount, duration: NATIVE_TICK_MS, easing: Easing.linear, useNativeDriver: true })];
+      if (shape) step.push(Animated.timing(voiceOpen, { toValue: shape.open, duration: NATIVE_TICK_MS, easing: Easing.linear, useNativeDriver: false }));
+      const animation = Animated.parallel(step);
+      running.push(animation);
+      animation.start();
+    });
+    return () => {
+      off();
+      for (const animation of running.splice(0)) animation.stop();
+    };
+  }, [live, voice, state, voiceBody, voiceOpen, levelRef]);
 
   useEffect(() => {
     if (!live) return;
@@ -605,13 +696,13 @@ export function AgentFace(props: AgentFaceProps) {
   return (
     <View testID={testID ?? "agentface-live"} {...a11y} style={{ width: size, height: size }}>
       {showOrnament && ornament !== "typing" ? <Ornament kind={ornament} size={size} color={finalColor} anchor={anchor} /> : null}
-      <Animated.View style={{ width: size, height: size, transform: bodyTransform(body, size, SHAPE_BOUNDS[finalShape].maxY) }}>
+      <Animated.View style={{ width: size, height: size, transform: bodyTransform(body, size, SHAPE_BOUNDS[finalShape].maxY, voiceBody, state) }}>
         <Svg viewBox="0 0 100 100" width={size} height={size}>
           <G scale={shrink ? ORNAMENT_SCALE : 1} origin="50, 50">
             {bodyPath ? <AnimatedPath d={bodyPath} fill={finalColor} /> : <Path d={SHAPE_PATHS[finalShape]} fill={finalColor} />}
             {dotR && glyphSpec?.dot ? <AnimatedCircle cx={glyphSpec.dot.cx} cy={glyphSpec.dot.cy} r={dotR} fill={finalColor} /> : null}
             <AnimatedG opacity={faceOpacity} x={rideX} y={rideY} scale={rideScale} origin={`${anchor.cx}, ${anchor.cy}`}>
-              <LiveFace seedKey={seed} anchor={anchor} color={finalColor} state={state} expression={expression ?? null} mouth={showMouth} turn={turnJs} onExpression={(name) => setLove(EXPRESSION_GLYPH[name] === "heart")} />
+              <LiveFace seedKey={seed} anchor={anchor} color={finalColor} state={state} expression={expression ?? null} mouth={showMouth} turn={turnJs} voiceOpen={voiceDriven && state === "speaking" ? voiceOpen : null} onExpression={(name) => setLove(EXPRESSION_GLYPH[name] === "heart")} />
             </AnimatedG>
           </G>
         </Svg>

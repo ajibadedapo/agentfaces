@@ -80,6 +80,9 @@ Both install `agentfaces` from npm and are not part of the published package.
 | `agentfaces/react` | `<AgentFace />` and `<AgentFacesProvider />` for the web (client component). |
 | `agentfaces/react-native` | The same component for React Native. |
 | `agentfaces/svg` | `renderFaceSvg` and `buildFaceSet` for static SVG strings, sprites and manifests. |
+| `agentfaces/livekit` | Maps LiveKit `useVoiceAssistant()` state and audio track to face props. |
+| `agentfaces/openai-realtime` | Follows OpenAI Realtime events and sessions as face states. |
+| `agentfaces/elevenlabs` | Maps ElevenLabs conversation status, mode and volume to face props. |
 
 ## `<AgentFace />`
 
@@ -97,6 +100,7 @@ Both install `agentfaces` from npm and are not part of the published package.
 | `name` | `string` | | Builds the accessible name as `"name, state"`. |
 | `decorative` | `boolean` | `false` | Hide from assistive technology. |
 | `reducedMotion` | `boolean` | OS setting | Force reduced motion on or off. |
+| `audio` | `AudioLevelSource \| null` | synthetic when speaking | Audio for `listening` and `speaking`. See [Voice agents](#voice-agents). |
 
 ## Theme and seeded faces
 
@@ -119,14 +123,39 @@ The provider also takes `variant`, `mouth`, `reducedMotion` and `labels` (to tra
 | Core work states | `idle`, `thinking`, `working`, `needs-you`, `done`, `alert`, `celebrate`, `sleeping` |
 | Extended | `starting`, `attentive`, `exploring`, `waiting`, `handing-off`, `heads-up` |
 | Ornaments | `typing` (ellipsis), `running` (spinner), `monitoring` (ripple), `background` (tracker) |
+| Voice | `listening`, `speaking` |
 
 `alert`, `needs-you` and `done` morph the body into `!`, `?` and a check mark. `celebrate` throws confetti. Morphs, ornaments and confetti are skipped under reduced motion and in the still variant.
+
+## Voice agents
+
+`listening` leans in, holds its gaze on the user and pulses with their voice. `speaking` moves the mouth with the agent's audio: it opens with loudness and spreads for bright sounds or rounds for dark ones. Pass the audio as `audio`.
+
+```tsx
+import { AgentFace, useAudioLevel } from "agentfaces/react";
+
+const level = useAudioLevel(stream);
+
+<AgentFace state={agentIsTalking ? "speaking" : "listening"} audio={level} />;
+```
+
+`audio` takes a `MediaStream`, an `AudioNode`, an `HTMLMediaElement`, a level callback `(now) => number`, a level stream (`createLevelFeed()`), or an `AudioLevel`. React Native has no Web Audio, so it takes callbacks, streams and levels. With no `audio`, a speaking face follows a built-in synthetic voice; pass `null` to keep the mouth still. Under reduced motion and in the still variant the face rests and no audio is read.
+
+From the framework-free core: `createAudioLevel(source, options)` returns a smoothed level (0..1) with coarse `low`, `mid` and `high` bands. It schedules nothing itself: every face calls `update(now)` from the one shared ticker, and a level shared by many faces is read once per frame. `mouthForLevel(level, bands)` and `MouthModel` map levels to mouth openness and width with attack and release smoothing.
+
+| Adapter | Use |
+| --- | --- |
+| `agentfaces/livekit` | `<AgentFace {...liveKitFace(useVoiceAssistant(), { microphone })} />` |
+| `agentfaces/openai-realtime` | `bindRealtimeSession(session, setState)` for `@openai/agents-realtime`, or `createRealtimeFaceState(setState).handle(event)` for raw Realtime server events. Over WebRTC pass the session's audio element as `audio`. |
+| `agentfaces/elevenlabs` | `<AgentFace {...elevenLabsFace(useConversation())} />`, or spread `elevenLabsCallbacks(setState)` into `Conversation.startSession()`. |
+
+Adapters have no runtime dependencies and import nothing from the SDKs. They read small structural interfaces checked against `@livekit/components-react` 2.9, `@openai/agents-realtime` 0.19, `openai` 7.28, `@elevenlabs/client` 1.26 and `@elevenlabs/react` 1.16 (`node scripts/check-adapters.mjs`).
 
 ## Expressions
 
 ![Expressions](https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/expressions.png)
 
-`calm`, `glad`, `pleased`, `sly`, `playful`, `eager`, `giggling`, `cheering`, `overjoyed`, `smitten`, `bashful`, `flustered`, `wistful`, `serene`, `intrigued`, `pondering`, `intent`, `resolute`, `doubtful`, `puzzled`, `watchful`, `startled`, `uneasy`, `downcast`, `weary`, `drowsy`. Holding `smitten` morphs the body into a heart.
+`calm`, `glad`, `pleased`, `sly`, `playful`, `eager`, `giggling`, `cheering`, `overjoyed`, `smitten`, `bashful`, `flustered`, `wistful`, `serene`, `intrigued`, `pondering`, `intent`, `resolute`, `doubtful`, `puzzled`, `watchful`, `startled`, `uneasy`, `downcast`, `weary`, `drowsy`, `heedful`, `chatty`. Holding `smitten` morphs the body into a heart.
 
 ## Static exports
 

@@ -9,7 +9,7 @@
     "name": "agentfaces (everything)",
     "path": "dist/index.js",
     "import": "*",
-    "limit": "18 kB"
+    "limit": "20 kB"
   },
   {
     "name": "agentfaces/svg",
@@ -25,7 +25,7 @@
       "react",
       "react-dom"
     ],
-    "limit": "19 kB"
+    "limit": "21 kB"
   },
   {
     "name": "agentfaces/react-native",
@@ -36,6 +36,33 @@
       "react-native",
       "react-native-svg"
     ],
-    "limit": "19 kB"
+    "limit": "21 kB"
+  },
+  {
+    "name": "agentfaces/livekit (adapter only)",
+    "path": "dist/livekit/index.js",
+    "import": "*",
+    "ignore": [
+      "agentfaces"
+    ],
+    "limit": "1 kB"
+  },
+  {
+    "name": "agentfaces/openai-realtime (adapter only)",
+    "path": "dist/openai-realtime/index.js",
+    "import": "*",
+    "ignore": [
+      "agentfaces"
+    ],
+    "limit": "1.5 kB"
+  },
+  {
+    "name": "agentfaces/elevenlabs (adapter only)",
+    "path": "dist/elevenlabs/index.js",
+    "import": "*",
+    "ignore": [
+      "agentfaces"
+    ],
+    "limit": "1 kB"
   }
 ]
