@@ -597,8 +597,8 @@ function useGlyph(state: AgentState, live: boolean, love: boolean): GlyphDrive {
 export function AgentFace(props: AgentFaceProps) {
   const theme = useAgentFacesTheme();
   const face = resolveFace(props, theme);
-  const { state, shape: finalShape, color: finalColor, seed, size, variant, mouth, accessibleName, reducedMotion, palette } = face;
-  const { expression, decorative = false, testID } = props;
+  const { state, shape: finalShape, color: finalColor, seed, size, variant, mouth, accessibleName, reducedMotion, palette, expression } = face;
+  const { decorative = false, testID } = props;
   const systemReduced = useReducedMotion();
   const live = variant === "live" && !(reducedMotion ?? systemReduced);
   const spec = STATE_MOTION[state];

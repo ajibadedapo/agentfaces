@@ -3,6 +3,7 @@ import { anchorForSize } from "./anchors";
 import { EXPRESSIONS, type ExpressionName } from "./expressions";
 import { FACE_COLORS, faceGeometry, REST_POSE, type EyeGeometry, type FaceGeometry, type FacePose } from "./face";
 import { SHAPE_PATHS } from "./shapes";
+import { checkExpression, checkShape, checkState } from "./names";
 import { restExpression, STATE_LABEL, type AgentState } from "./states";
 
 export interface FaceSvgOptions {
@@ -60,7 +61,10 @@ export function escapeAttribute(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-export function renderFaceSvg({ shape, color, state = "idle", expression, mouth = true, pose = REST_POSE, size, label, decorative = false, idPrefix = "af" }: FaceSvgOptions): string {
+export function renderFaceSvg({ shape: shapeName, color, state: stateName, expression: expressionName, mouth = true, pose = REST_POSE, size, label, decorative = false, idPrefix = "af" }: FaceSvgOptions): string {
+  const shape = checkShape(shapeName, "circle")!;
+  const state = checkState(stateName);
+  const expression = checkExpression(expressionName);
   const geometry = faceGeometry(EXPRESSIONS[expression ?? restExpression(state)], anchorForSize(shape, size), pose);
   const dims = size ? ` width="${size}" height="${size}"` : "";
   const name = label ?? STATE_LABEL[state];

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "agentfaces",
+  "homepage": "https://ajibadedapo.github.io/agentfaces/",
+  "items": [
+    {
+      "name": "agent-face",
+      "type": "registry:component",
+      "title": "Agent Face",
+      "description": "An expressive face that shows what an AI agent is doing (thinking, working, needs you, done, listening, speaking), plus an AgentStatus face with a text label. Wraps the agentfaces npm package.",
+      "dependencies": ["agentfaces"],
+      "files": [
+        {
+          "path": "registry/agent-face/agent-face.tsx",
+          "type": "registry:component",
+          "target": "components/agent-face.tsx"
+        }
+      ],
+      "docs": "Usage: <AgentFace state=\"thinking\" seed={agent.id} /> or <AgentStatus state=\"working\" name=\"Ada\" />. States, expressions and voice props: https://ajibadedapo.github.io/agentfaces/llms-full.txt"
+    }
+  ]
+}

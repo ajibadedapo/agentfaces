@@ -1,4 +1,4 @@
-import { AGENT_STATES, EXPRESSION_NAMES, FACE_ANCHORS, renderFaceSvg, restExpression, STATE_EXPRESSIONS, STATE_LABEL, type ExpressionName, type FaceSvgOptions, type ShapeName } from "agentfaces";
+import { AGENT_STATES, checkShape, EXPRESSION_NAMES, FACE_ANCHORS, renderFaceSvg, restExpression, STATE_EXPRESSIONS, STATE_LABEL, type ExpressionName, type FaceSvgOptions, type ShapeName } from "agentfaces";
 
 export { renderFaceSvg, faceMarkup, bodyMarkup, escapeAttribute, faceFor, type FaceSvgOptions } from "agentfaces";
 
@@ -32,7 +32,8 @@ export function faceSymbol(id: string, options: FaceSvgOptions): string {
   return `<symbol id="${id}" viewBox="0 0 100 100">${inner}</symbol>`;
 }
 
-export function buildFaceSet(shape: ShapeName, color = "currentColor"): FaceSet {
+export function buildFaceSet(shapeName: ShapeName, color = "currentColor"): FaceSet {
+  const shape = checkShape(shapeName, "circle")!;
   const files: Record<string, string> = {};
   const frames: FaceSetFrame[] = [];
   const symbols: string[] = [];

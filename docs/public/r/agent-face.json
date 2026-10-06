@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "agent-face",
+  "title": "Agent Face",
+  "description": "An expressive face that shows what an AI agent is doing (thinking, working, needs you, done, listening, speaking), plus an AgentStatus face with a text label. Wraps the agentfaces npm package.",
+  "dependencies": [
+    "agentfaces"
+  ],
+  "files": [
+    {
+      "path": "registry/agent-face/agent-face.tsx",
+      "content": "\"use client\";\n\nimport { AgentFace as Face, STATE_LABEL, type AgentFaceProps as FaceProps, type AgentState } from \"agentfaces/react\";\n\nexport type { AgentState };\n\nexport type AgentFaceProps = FaceProps;\n\n/** An agent face that shows what an AI agent is doing. Change `state` as the agent works. */\nexport function AgentFace({ size = 40, ...props }: AgentFaceProps) {\n  return <Face size={size} {...props} />;\n}\n\nexport interface AgentStatusProps extends Omit<AgentFaceProps, \"decorative\" | \"label\"> {\n  /** Text shown next to the face. Defaults to the state name, for example \"Thinking\". */\n  text?: string;\n}\n\n/** A face with a text label beside it, for headers, chat bubbles and agent lists. */\nexport function AgentStatus({ state = \"idle\", name, text, className, style, size = 28, ...props }: AgentStatusProps) {\n  const label = text ?? STATE_LABEL[state] ?? STATE_LABEL.idle;\n  return (\n    <span className={[\"inline-flex items-center gap-2\", className].filter(Boolean).join(\" \")} style={style} role=\"status\" aria-live=\"polite\">\n      <Face state={state} name={name} size={size} decorative {...props} />\n      <span className=\"text-sm text-muted-foreground\">{name ? `${name}: ${label}` : label}</span>\n    </span>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "components/agent-face.tsx"
+    }
+  ],
+  "docs": "Usage: <AgentFace state=\"thinking\" seed={agent.id} /> or <AgentStatus state=\"working\" name=\"Ada\" />. States, expressions and voice props: https://ajibadedapo.github.io/agentfaces/llms-full.txt",
+  "type": "registry:component"
+}

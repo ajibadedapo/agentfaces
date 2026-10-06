@@ -1,0 +1,337 @@
+# agentfaces: full reference
+
+> Expressive animated faces for AI agents. One `<AgentFace state="thinking" />` component shows what an agent is doing on React, React Native and as plain SVG strings. Zero runtime dependencies, MIT licensed, npm package `agentfaces`. Docs: https://ajibadedapo.github.io/agentfaces/ Source: https://github.com/ajibadedapo/agentfaces
+
+This file is the complete API reference and recipes in one place, written for AI coding agents and humans. It matches agentfaces 0.2.x.
+
+## Install
+
+```sh
+npm install agentfaces
+```
+
+React Native also needs `react-native-svg` (no reanimated):
+
+```sh
+npm install agentfaces react-native-svg
+```
+
+Peer dependencies are optional and only needed for the entry point you use: `react >= 18` for `agentfaces/react`, plus `react-native >= 0.72` and `react-native-svg >= 13` for `agentfaces/react-native`. Node 18 or newer.
+
+## Entry points
+
+| Import | Use it for |
+| --- | --- |
+| `agentfaces/react` | `<AgentFace />`, `<AgentFacesProvider />` and `useAudioLevel` on the web. Ships with `"use client"`, so it works in Next.js App Router server components as a child. |
+| `agentfaces/react-native` | The same `<AgentFace />` and provider for React Native, drawn with `react-native-svg` and the built-in `Animated` API. |
+| `agentfaces/svg` | `renderFaceSvg` (one SVG string) and `buildFaceSet` (every state and expression as files, a sprite and a manifest). For servers, emails, other frameworks. |
+| `agentfaces` | Framework-free core: state and expression names, labels, `faceFor`, geometry, the behaviour scheduler, the ticker and audio levels. No React. |
+| `agentfaces/livekit` | Maps LiveKit `useVoiceAssistant()` to face props. |
+| `agentfaces/openai-realtime` | Follows OpenAI Realtime events or an `@openai/agents-realtime` session as face states. |
+| `agentfaces/elevenlabs` | Maps ElevenLabs conversation status, mode and volume to face props. |
+
+`agentfaces/react` and `agentfaces/react-native` also re-export the names you usually need: `AGENT_STATES`, `EXPRESSION_NAMES`, `SHAPE_NAMES`, `STATE_LABEL`, `DEFAULT_PALETTE`, `VOICE_STATES`, `faceFor`, `placementVariant`, `createAudioLevel`, `createLevelFeed`, `createSyntheticVoice` and the types `AgentState`, `ExpressionName`, `ShapeName`, `VoiceState`, `Placement`, `AudioLevel` and friends.
+
+Never import the web component from `agentfaces` (the root has no component) and never import `agentfaces/react` in a React Native app.
+
+## `<AgentFace />` props
+
+Same props on `agentfaces/react` and `agentfaces/react-native`. Every prop is optional.
+
+| Prop | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `state` | `AgentState` | `"idle"` | What the agent is doing. Drives motion, expressions, glyph morphs and the accessible name. |
+| `shape` | `"circle" \| "triangle" \| "square"` | picked from `seed` | Body shape. |
+| `color` | `string` (hex) | picked from `seed` | Body color. |
+| `seed` | `string` | `""` | Stable id (agent or user id). Picks shape and color and seeds the motion so the same agent always looks the same. |
+| `size` | `number` | `48` | Pixels on the web, points on native. |
+| `expression` | `ExpressionName` | cycles the state's pool | Hold one expression instead of cycling. |
+| `variant` | `"live" \| "still"` | `"live"` | `"still"` renders one frame and runs no timers. Use it in long lists. |
+| `mouth` | `boolean` | `true` | Draw the mouth. |
+| `label` | `string` | state name | Full accessible name. Overrides `name`. |
+| `name` | `string` | | Agent name; the accessible name becomes `"name, State"`, for example `"Ada, Thinking"`. |
+| `decorative` | `boolean` | `false` | Hide from assistive technology (when visible text already says the state). |
+| `reducedMotion` | `boolean` | OS setting | Force reduced motion on or off. |
+| `audio` | web: `MediaStream \| AudioNode \| HTMLMediaElement \| LevelCallback \| LevelStream \| AudioLevel \| null`; native: `LevelCallback \| LevelStream \| AudioLevel \| null` | simulated while speaking | Audio for the voice states. See Voice agents. |
+| `className`, `style` | web only | | Applied to the root `<span>`. |
+| `testID` | native only | `"agentface-live"` or `"agentface-still"` | Test id on the root view. |
+
+The web root is a `<span data-agentface role="img" aria-label="...">` with `data-af-state`, `data-af-variant` and `data-af-expression` attributes, handy for tests.
+
+## States (`AgentState`)
+
+20 states. Pick the one that matches what the agent is doing right now.
+
+| Group | Constant | States |
+| --- | --- | --- |
+| Core work states | `CORE_STATES` | `idle`, `thinking`, `working`, `needs-you`, `done`, `alert`, `celebrate`, `sleeping` |
+| Extended | `EXTENDED_STATES` | `starting`, `attentive`, `exploring`, `waiting`, `handing-off`, `heads-up` |
+| Ornaments | `ORNAMENT_STATES` | `typing` (ellipsis over the mouth), `running` (spinner ring), `monitoring` (ripple), `background` (orbiting tracker dot) |
+| Voice | `VOICE_STATES` | `listening`, `speaking` |
+
+All of them: `AGENT_STATES`. Names are lowercase and kebab-case: `needs-you`, `handing-off`, `heads-up` (never `needs_you`, `needsYou` or `waiting_for_user`).
+
+Accessible names (`STATE_LABEL`): Idle, Thinking, Working, Needs you, Done, Alert, Celebrating, Sleeping, Starting up, Paying attention, Exploring, Waiting, Handing off, Heads up, Typing, Running, Monitoring, Working in the background, Listening, Speaking. Translate them with the provider's `labels`.
+
+Behaviour worth knowing:
+
+- `alert`, `needs-you` and `done` periodically morph the body into `!`, `?` and a check mark and back.
+- `celebrate` throws confetti.
+- `done`, `starting` and `handing-off` play their body motion once; the others loop.
+- `listening` leans in and pulses with the user's voice; `speaking` moves the mouth with the agent's audio.
+- Morphs, ornaments, confetti and voice motion are skipped under reduced motion and in the still variant.
+
+Suggested mapping from a typical agent loop:
+
+| Agent is... | State |
+| --- | --- |
+| waiting for input, nothing happening | `idle` |
+| request sent, model has not answered yet | `thinking` |
+| streaming text | `typing` |
+| running a tool or long task | `working` (or `running` for a spinner) |
+| blocked on user approval or a question | `needs-you` |
+| finished a turn successfully | `done` |
+| error or failed tool | `alert` |
+| big success (task complete, tests green) | `celebrate` |
+| disconnected or paused | `sleeping` |
+| booting or connecting | `starting` |
+| delegating to another agent or a human | `handing-off` |
+| watching something in the background | `monitoring` or `background` |
+| voice agent hearing the user | `listening` |
+| voice agent talking | `speaking` |
+
+## Expressions (`ExpressionName`)
+
+28 expressions in `EXPRESSION_NAMES`: `calm`, `glad`, `pleased`, `sly`, `playful`, `eager`, `giggling`, `cheering`, `overjoyed`, `smitten`, `bashful`, `flustered`, `wistful`, `serene`, `intrigued`, `pondering`, `intent`, `resolute`, `doubtful`, `puzzled`, `watchful`, `startled`, `uneasy`, `downcast`, `weary`, `drowsy`, `heedful`, `chatty`.
+
+Each state cycles a small pool of expressions on its own (`STATE_EXPRESSIONS`), so you normally do not set `expression`. Set it only to hold one face, for example `expression="puzzled"`. Holding `smitten` morphs the body into a heart. There is no `happy`, `sad` or `angry`: use `glad`, `downcast` or `resolute`.
+
+## Shapes and colors (`ShapeName`)
+
+`circle`, `triangle`, `square` (`SHAPE_NAMES`). Default palette (`DEFAULT_PALETTE`): `#8B5CF6`, `#2B90FF`, `#20C75E`, `#13B8A7`, `#F97216`, `#F6254C`, `#EA489B`, `#64748B`, `#D4A000`. With a `seed` and no `shape` or `color`, `faceFor(seed, { shapes, palette })` picks both deterministically.
+
+## Unknown names
+
+`state`, `shape` and `expression` are checked at runtime. An unknown value never throws: the face falls back (`idle` for state, the seeded shape for shape, the state's own expressions for expression; `renderFaceSvg` and `buildFaceSet` fall back to `circle`) and, in development only (`process.env.NODE_ENV !== "production"`), warns once with the fix, for example:
+
+```
+agentfaces: unknown state "needs_you". Did you mean "needs-you"? Using "idle" instead. Valid states: idle, thinking, ...
+```
+
+The same checks are exported for your own code: `checkState(value, fallback?)`, `checkShape(value, fallback?)`, `checkExpression(value)`, `suggestName(value, names)` and `isAgentState(value)` from `agentfaces`.
+
+## `<AgentFacesProvider />`
+
+Sets defaults for every face below it. Providers nest and merge.
+
+| Prop | Type | Meaning |
+| --- | --- | --- |
+| `shapes` | `ShapeName[]` | Shapes seeded faces are picked from. |
+| `palette` | `string[]` | Colors seeded faces and confetti are picked from. |
+| `size` | `number` | Default size. |
+| `variant` | `"live" \| "still"` | Default variant. |
+| `mouth` | `boolean` | Default mouth switch. |
+| `reducedMotion` | `boolean` | Force reduced motion for every face. |
+| `labels` | `Partial<Record<AgentState, string>>` | Override or translate accessible state names. |
+
+`useAgentFacesTheme()` reads the current theme.
+
+## `agentfaces/svg`
+
+- `renderFaceSvg(options): string` returns one standalone `<svg>` string. Options: `shape` (required), `color` (required), `state`, `expression`, `size`, `mouth`, `label`, `decorative`, `pose`, `idPrefix` (make it unique when several SVGs share a page). The SVG has `role="img"` and an `aria-label` unless `decorative`.
+- `buildFaceSet(shape, color = "currentColor")` returns `{ manifest, files }`: `states/<state>.svg` and `expressions/<expression>.svg` for every name, a `sprite.svg` of `<symbol>`s and `manifest.json`. With `currentColor` bodies, tint them with CSS `color` on the host element.
+- Also re-exports `faceSymbol`, `faceMarkup`, `bodyMarkup`, `escapeAttribute` and `faceFor`.
+
+## Core helpers (`agentfaces`)
+
+- `faceFor(seed, { shapes?, palette? }): { shape, color }` deterministic pick for a seed.
+- `placementVariant(state, placement)`: `"list"` always returns `"still"`; `"feature"` returns `"live"` except for `idle` and `sleeping`. Use it to keep long lists cheap.
+- `STATE_LABEL`, `AGENT_STATES`, `CORE_STATES`, `EXTENDED_STATES`, `ORNAMENT_STATES`, `VOICE_STATES`, `EXPRESSION_NAMES`, `SHAPE_NAMES`, `DEFAULT_PALETTE`.
+- `isAgentState(value)`, `isVoiceState(value)`, `restExpression(state)`.
+- Lower-level building blocks for writing a renderer for another framework: `EXPRESSIONS`, `faceGeometry`, `anchorForSize`, `Director`, `Performer`, `BodyPerformer`, `GlyphPerformer`, `createTicker`, `animationFrameDriver`, `intervalDriver`, `morphPath`, `SHAPE_PATHS`.
+
+## Voice agents
+
+`listening` leans in, holds its gaze on the user and pulses with their voice. `speaking` moves the mouth with the agent's audio: it opens with loudness and spreads or rounds with the sound. Pass audio as the `audio` prop.
+
+- Web `audio` accepts a `MediaStream`, an `AudioNode`, an `HTMLMediaElement`, a level callback `(now) => number | { level, bands }`, a level stream (`createLevelFeed()`), or an `AudioLevel`.
+- React Native has no Web Audio, so `audio` accepts a level callback, a level stream or an `AudioLevel`. Feed it from your recorder or player meter.
+- With no `audio` prop, `speaking` is simulated with a synthetic voice (the mouth moves but is not in sync). Pass `audio={null}` to hold the mouth still.
+- `useAudioLevel(source, options?)` (from `agentfaces/react` and `agentfaces/react-native`) creates a smoothed `AudioLevel` and closes it on unmount. Options: `attack` (ms, 24), `release` (ms, 110), `gain` (1), `floorDb` (-58), `ceilingDb` (-16), `bands` (true), `context` (an `AudioContext`).
+- Core: `createAudioLevel(source, options)`, `createLevelFeed()` (push numbers 0..1 or `{ level, bands }`), `createSyntheticVoice(seed?, { rate?, loudness?, pause? })`, `mouthForLevel(level, bands)`, `MouthModel`, `pcm16Level(chunk)`.
+
+### LiveKit (`agentfaces/livekit`)
+
+- `liveKitFace(assistant, { microphone? }): { state, audio }` from `useVoiceAssistant()`. Spread it into `AgentFace`.
+- `faceStateFromLiveKit(state)`, `LIVEKIT_FACE_STATES` (`disconnected` to `sleeping`, `connecting` and `initializing` to `starting`, `failed` to `alert`, others map by name), `streamFromTrackRef(ref)`.
+
+### OpenAI Realtime (`agentfaces/openai-realtime`)
+
+- `bindRealtimeSession(session, onState, initial = "starting"): () => void` follows an `@openai/agents-realtime` `RealtimeSession` (transport events, interruptions, tool start and end, approvals, errors). Returns an unsubscribe function.
+- `createRealtimeFaceState(onChange?, initial?)` with `.handle(event)` for raw Realtime server events (WebRTC data channel or WebSocket); `nextRealtimeState(current, event, context?)` is the pure reducer.
+- `createPcmLevelFeed()` for 16-bit PCM audio you play yourself: call `pushPcm(chunk)` as each chunk plays and pass the feed as `audio`. Over WebRTC, pass the session's audio element as `audio` instead.
+
+### ElevenLabs (`agentfaces/elevenlabs`)
+
+- `elevenLabsFace(conversation, options?): { state, audio }` from `useConversation()` (`@elevenlabs/react`) or a `Conversation` (`@elevenlabs/client`). Spread it into `AgentFace`.
+- `elevenLabsCallbacks(onState)` returns `onStatusChange`, `onModeChange` and `onError` to spread into `Conversation.startSession()`.
+- `faceStateFromElevenLabs({ status, mode })`, `elevenLabsLevel(conversation, "input" | "output", { gain?, bands? })`.
+
+Adapters import nothing from the SDKs; they read small structural interfaces.
+
+## Recipes
+
+### 1. Show an agent's status in a React or Next.js app
+
+```tsx
+import { AgentFace } from "agentfaces/react";
+
+export function AgentHeader({ agent }: { agent: { id: string; name: string; state: "thinking" | "working" | "needs-you" | "done" } }) {
+  return <AgentFace state={agent.state} seed={agent.id} name={agent.name} size={56} />;
+}
+```
+
+`agentfaces/react` is already a client component, so you can render it from a Next.js server component.
+
+### 2. Map the Vercel AI SDK `useChat` status to a face
+
+```ts
+import { isToolUIPart, type ChatStatus, type UIMessage } from "ai";
+import type { AgentState } from "agentfaces";
+
+export function agentStateFor(status: ChatStatus, messages: UIMessage[]): AgentState {
+  if (status === "error") return "alert";
+  if (status === "submitted") return "thinking";
+  const last = messages.at(-1);
+  const tools = last?.role === "assistant" ? last.parts.filter(isToolUIPart) : [];
+  if (tools.some((part) => part.state === "approval-requested")) return "needs-you";
+  if (status === "streaming") {
+    const toolRunning = tools.some((part) => part.state === "input-streaming" || part.state === "input-available");
+    return toolRunning ? "working" : "typing";
+  }
+  return last?.role === "assistant" ? "done" : "idle";
+}
+```
+
+```tsx
+const { messages, status } = useChat();
+<AgentFace state={agentStateFor(status, messages)} shape="circle" color="#2F6BFF" size={72} name="Assistant" />;
+```
+
+Full example: https://github.com/ajibadedapo/agentfaces/tree/main/examples/vercel-ai-sdk
+
+### 3. A list of many agents (cheap at scale)
+
+```tsx
+import { AgentFace, AgentFacesProvider, placementVariant } from "agentfaces/react";
+
+<AgentFacesProvider shapes={["circle", "square"]} palette={["#2F6BFF", "#13B8A7", "#F97216"]} size={32}>
+  {agents.map((agent) => (
+    <AgentFace key={agent.id} seed={agent.id} name={agent.name} state={agent.state} variant={placementVariant(agent.state, "list")} />
+  ))}
+</AgentFacesProvider>;
+```
+
+One shared ticker drives every live face and off-screen faces pause, but `variant="still"` runs no timers at all.
+
+### 4. React Native or Expo
+
+```tsx
+import { AgentFace } from "agentfaces/react-native";
+
+<AgentFace state="needs-you" seed={agent.id} name={agent.name} size={56} />;
+```
+
+Voice on native, from a recorder meter in dB:
+
+```tsx
+import { AgentFace, createLevelFeed } from "agentfaces/react-native";
+
+const feed = createLevelFeed();
+recorder.onMeter((db) => feed.push(Math.max(0, (db + 60) / 50)));
+
+<AgentFace state="listening" audio={feed} />;
+```
+
+Create the feed once (module scope, `useMemo` or `useRef`), not on every render.
+
+### 5. Voice agent avatar
+
+LiveKit:
+
+```tsx
+import { useVoiceAssistant } from "@livekit/components-react";
+import { AgentFace } from "agentfaces/react";
+import { liveKitFace } from "agentfaces/livekit";
+
+const assistant = useVoiceAssistant();
+<AgentFace {...liveKitFace(assistant)} name="Assistant" />;
+```
+
+ElevenLabs:
+
+```tsx
+import { useConversation } from "@elevenlabs/react";
+import { AgentFace } from "agentfaces/react";
+import { elevenLabsFace } from "agentfaces/elevenlabs";
+
+const conversation = useConversation();
+<AgentFace {...elevenLabsFace(conversation)} />;
+```
+
+OpenAI Realtime over WebRTC with the Agents SDK:
+
+```tsx
+import { OpenAIRealtimeWebRTC, RealtimeSession } from "@openai/agents-realtime";
+import { AgentFace } from "agentfaces/react";
+import { bindRealtimeSession } from "agentfaces/openai-realtime";
+
+const audioElement = new Audio();
+const session = new RealtimeSession(agent, { transport: new OpenAIRealtimeWebRTC({ audioElement }) });
+const unbind = bindRealtimeSession(session, setState);
+
+<AgentFace state={state} audio={audioElement} />;
+```
+
+Any other source (a `MediaStream` from `getUserMedia`, a playing `<audio>` element):
+
+```tsx
+import { AgentFace, useAudioLevel } from "agentfaces/react";
+
+const level = useAudioLevel(stream);
+<AgentFace state={agentIsTalking ? "speaking" : "listening"} audio={level} />;
+```
+
+### 6. Static SVG for servers, emails, Vue, Svelte or plain HTML
+
+```ts
+import { renderFaceSvg } from "agentfaces/svg";
+
+const svg = renderFaceSvg({ shape: "square", color: "#8B5CF6", state: "done", size: 64 });
+```
+
+### 7. shadcn/ui
+
+```sh
+npx shadcn@latest add https://ajibadedapo.github.io/agentfaces/r/agent-face.json
+```
+
+Adds `components/agent-face.tsx` (a client component with `AgentFace` and `AgentStatus`, a face with a text label) and installs `agentfaces`.
+
+```tsx
+import { AgentFace, AgentStatus } from "@/components/agent-face";
+
+<AgentStatus state="working" name="Ada" />;
+```
+
+## Pitfalls
+
+- Use the right entry point: `agentfaces/react` on the web, `agentfaces/react-native` on native, `agentfaces/svg` for strings. The root `agentfaces` has no component.
+- State names are kebab-case: `needs-you`, `handing-off`, `heads-up`. Unknown names fall back to `idle` and warn in development.
+- Do not re-mount the face to change state (no `key={state}`); just change the `state` prop so it animates between states.
+- Keep `seed` stable (an id, not an index or a random value), or the face changes look between renders.
+- Do not add your own `setInterval` or animation loop; the library runs one shared ticker and pauses off-screen faces.
+- Do not install reanimated or Lottie for this; React Native needs only `react-native-svg`.
+- Without an `audio` prop, `speaking` is simulated. Connect real audio for lip sync or pass `audio={null}`.
+- Create level feeds and `useAudioLevel` sources once, not inside render on every frame.
+- Give each face an accessible name with `name` or `label`, or set `decorative` when visible text already states it.

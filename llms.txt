@@ -1,0 +1,25 @@
+# agentfaces
+
+> Expressive animated faces for AI agents. One `<AgentFace state="thinking" />` component shows what an agent is doing (idle, thinking, working, needs-you, done, alert, celebrate, sleeping, plus listening and speaking for voice agents) on React, React Native and as plain SVG strings. Zero runtime dependencies, MIT licensed, npm package `agentfaces`.
+
+Install with `npm install agentfaces` (React Native also needs `react-native-svg`). Import the component from the entry point for your platform: `agentfaces/react` on the web (a client component), `agentfaces/react-native` on native, `agentfaces/svg` for static SVG. State, shape and expression names are fixed string unions; unknown names fall back to a default and warn in development with a "did you mean" suggestion.
+
+## Docs
+
+- [Full API reference and recipes](https://ajibadedapo.github.io/agentfaces/llms-full.txt): every prop, state, expression, entry point and voice adapter, with copy-paste recipes, in one plain markdown file
+- [Docs site and playground](https://ajibadedapo.github.io/agentfaces/): live states, expressions, shapes and the voice demos
+- [README](https://github.com/ajibadedapo/agentfaces/blob/main/README.md): overview, props table, states and voice agents
+- [AGENTS.md](https://github.com/ajibadedapo/agentfaces/blob/main/AGENTS.md): how an AI coding agent should use the library, common pitfalls, and how to work on the repo
+
+## Recipes
+
+- [Vercel AI SDK chat example](https://github.com/ajibadedapo/agentfaces/tree/main/examples/vercel-ai-sdk): maps `useChat` status and tool calls to face states in Next.js
+- [React Native with Expo example](https://github.com/ajibadedapo/agentfaces/tree/main/examples/react-native-expo): switches a face between the core states, plus seeded faces
+- [shadcn registry item](https://ajibadedapo.github.io/agentfaces/r/agent-face.json): `npx shadcn@latest add https://ajibadedapo.github.io/agentfaces/r/agent-face.json` adds `components/agent-face.tsx`
+- [Claude Code skill](https://github.com/ajibadedapo/agentfaces/blob/main/skills/agentfaces/SKILL.md): copy into `.claude/skills/agentfaces/` so coding agents use the library correctly
+
+## Optional
+
+- [Changelog](https://github.com/ajibadedapo/agentfaces/blob/main/CHANGELOG.md): release notes per version
+- [npm package](https://www.npmjs.com/package/agentfaces): versions and provenance
+- [Provenance](https://github.com/ajibadedapo/agentfaces/blob/main/PROVENANCE.md): how the artwork and motion were made
