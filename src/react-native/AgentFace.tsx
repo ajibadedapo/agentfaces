@@ -102,8 +102,8 @@ export interface AgentFaceProps {
   reducedMotion?: boolean;
   /**
    * Audio level for the voice states: a level callback, a level stream (see createLevelFeed) or an AudioLevel.
-   * React Native has no Web Audio, so feed it from your audio library's meter. When speaking with no audio set,
-   * the mouth follows a synthetic voice. Pass null for a still mouth.
+   * React Native has no Web Audio, so feed it from your audio library's meter. Until audio is connected,
+   * speaking is simulated: the mouth follows a synthetic voice. Pass null to hold the mouth still.
    */
   audio?: NativeAudioSource | null;
   testID?: string;

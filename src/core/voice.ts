@@ -84,7 +84,7 @@ export class MouthModel {
   }
 }
 
-export const LISTEN_FACE = { lidLift: 0.12, pupilGrow: 0.06 } as const;
+export const LISTEN_FACE = { lidLift: 0.06, pupilGrow: 0.06 } as const;
 export const SPEAK_FACE = { baseWidth: 15, cheek: 0.06, curveKeep: 0.45 } as const;
 
 /** Applies live voice input to face parameters: an audio-driven mouth when speaking, attentive eyes when listening. */

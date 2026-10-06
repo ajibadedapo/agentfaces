@@ -27,7 +27,7 @@ export const LANDING_IMPULSE = 2.6;
 export const CROUCH = { share: 0.12, squash: -0.09 } as const;
 export const HOP_HEIGHT = 11;
 export const BOB_HEIGHT = 7;
-export const LEAN = { size: 1.035, sink: 1.6, tilt: -2.5, breath: 0.008, pulse: 0.05 } as const;
+export const LEAN = { size: 1.035, sink: 1.6, tilt: -1.25, breath: 0.008, pulse: 0.05 } as const;
 export const TALK = { nod: 2.6, swell: 0.022, sway: 1.4, breath: 0.01 } as const;
 
 const TAU = Math.PI * 2;

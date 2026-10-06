@@ -100,7 +100,7 @@ Both install `agentfaces` from npm and are not part of the published package.
 | `name` | `string` | | Builds the accessible name as `"name, state"`. |
 | `decorative` | `boolean` | `false` | Hide from assistive technology. |
 | `reducedMotion` | `boolean` | OS setting | Force reduced motion on or off. |
-| `audio` | `AudioLevelSource \| null` | synthetic when speaking | Audio for `listening` and `speaking`. See [Voice agents](#voice-agents). |
+| `audio` | `AudioLevelSource \| null` | simulated when speaking | Audio for `listening` and `speaking`. See [Voice agents](#voice-agents). |
 
 ## Theme and seeded faces
 
@@ -139,7 +139,7 @@ const level = useAudioLevel(stream);
 <AgentFace state={agentIsTalking ? "speaking" : "listening"} audio={level} />;
 ```
 
-`audio` takes a `MediaStream`, an `AudioNode`, an `HTMLMediaElement`, a level callback `(now) => number`, a level stream (`createLevelFeed()`), or an `AudioLevel`. React Native has no Web Audio, so it takes callbacks, streams and levels. With no `audio`, a speaking face follows a built-in synthetic voice; pass `null` to keep the mouth still. Under reduced motion and in the still variant the face rests and no audio is read.
+`audio` takes a `MediaStream`, an `AudioNode`, an `HTMLMediaElement`, a level callback `(now) => number`, a level stream (`createLevelFeed()`), or an `AudioLevel`. React Native has no Web Audio, so it takes callbacks, streams and levels. **Until you connect audio, speaking is simulated:** with no `audio` prop the mouth follows a built-in synthetic voice, so it moves but is not in sync with anything. Connect real audio to lip sync, or pass `audio={null}` to hold the mouth still. Under reduced motion and in the still variant the face rests and no audio is read.
 
 From the framework-free core: `createAudioLevel(source, options)` returns a smoothed level (0..1) with coarse `low`, `mid` and `high` bands. It schedules nothing itself: every face calls `update(now)` from the one shared ticker, and a level shared by many faces is read once per frame. `mouthForLevel(level, bands)` and `MouthModel` map levels to mouth openness and width with attack and release smoothing.
 

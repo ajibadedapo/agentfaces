@@ -242,7 +242,7 @@ function Voice() {
     <section id="voice">
       <h2>Voice agents</h2>
       <p>
-        Two states for voice: <code>listening</code> leans in, holds its gaze on you and pulses with your voice, and <code>speaking</code> moves its mouth with the agent's audio, opening with loudness and spreading or rounding with the sound. Pass audio as <code>audio</code>. Under reduced motion and in the still variant the face rests and no audio is read.
+        Two states for voice: <code>listening</code> leans in, holds its gaze on you and pulses with your voice, and <code>speaking</code> moves its mouth with the agent's audio, opening with loudness and spreading or rounding with the sound. Pass audio as <code>audio</code>. Until you connect audio, speaking is simulated: the mouth follows a built-in synthetic voice that is not in sync with anything. Pass <code>audio={"{null}"}</code> to hold the mouth still. Under reduced motion and in the still variant the face rests and no audio is read.
       </p>
       <VoiceDemos />
       <div className="tabs" role="tablist">
@@ -271,7 +271,7 @@ const PROPS: Array<[string, string, string, string]> = [
   ["name", "string", "", 'Agent name. The accessible name becomes "name, state".'],
   ["decorative", "boolean", "false", "Hides the face from assistive technology."],
   ["reducedMotion", "boolean", "OS setting", "Force reduced motion on or off. Reduced motion renders a resting face with no blinks, morphs, confetti or audio-driven motion."],
-  ["audio", "AudioLevelSource | null", "synthetic when speaking", "Audio for listening and speaking: a MediaStream, AudioNode, HTMLMediaElement, level callback, level stream or AudioLevel. React Native takes callbacks, streams and levels. null keeps the mouth still."],
+  ["audio", "AudioLevelSource | null", "simulated when speaking", "Audio for listening and speaking: a MediaStream, AudioNode, HTMLMediaElement, level callback, level stream or AudioLevel. React Native takes callbacks, streams and levels. Without it, speaking is simulated with a synthetic voice. null holds the mouth still."],
   ["className, style", "", "", "Web only. Applied to the wrapping span."],
 ];
 

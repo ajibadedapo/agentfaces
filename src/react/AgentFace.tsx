@@ -77,7 +77,7 @@ export interface AgentFaceProps {
   /**
    * Audio for the voice states: the user's input while listening, the agent's output while speaking.
    * A MediaStream, AudioNode, HTMLMediaElement, level callback, level stream or AudioLevel.
-   * When speaking with no audio set, the mouth follows a synthetic voice. Pass null for a still mouth.
+   * Until audio is connected, speaking is simulated: the mouth follows a synthetic voice. Pass null to hold the mouth still.
    */
   audio?: AudioLevelSource | null;
   className?: string;

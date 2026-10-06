@@ -98,7 +98,7 @@ export const STATE_EXPRESSIONS: Record<AgentState, StateExpressions> = {
   speaking: pool(["chatty", "glad", "calm"], 9),
 };
 
-export const STATE_FOCUS: Partial<Record<AgentState, number>> = { listening: 0.18, speaking: 0.5 };
+export const STATE_FOCUS: Partial<Record<AgentState, number>> = { listening: 0.05, speaking: 0.5 };
 
 export const STATE_ORNAMENT: Partial<Record<AgentState, OrnamentKind>> = {
   typing: "typing",
