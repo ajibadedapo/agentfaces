@@ -19,6 +19,8 @@ import {
   FACE_COLORS,
   faceGeometry,
   glyphAnchor,
+  isVoiceState,
+  MouthModel,
   glyphKindsFor,
   GlyphPerformer,
   MOUTH_OFFSET_Y,
@@ -33,6 +35,7 @@ import {
   STATE_MOTION,
   STATE_ORNAMENT,
   type AgentState,
+  type AudioLevelSource,
   type BodyPose,
   type ConfettiPiece,
   type EyeGeometry,
@@ -44,6 +47,7 @@ import {
   warmMorphs,
 } from "agentfaces";
 import { resolveFace, useAgentFacesTheme } from "../shared/theme";
+import { useFaceLevel } from "../shared/audio";
 
 export interface AgentFaceProps {
   /** What the agent is doing. Drives motion, expressions, glyph morphs and the accessible name. */
@@ -70,6 +74,12 @@ export interface AgentFaceProps {
   decorative?: boolean;
   /** Forces reduced motion on or off. Follows the OS setting when unset. */
   reducedMotion?: boolean;
+  /**
+   * Audio for the voice states: the user's input while listening, the agent's output while speaking.
+   * A MediaStream, AudioNode, HTMLMediaElement, level callback, level stream or AudioLevel.
+   * Until audio is connected, speaking is simulated: the mouth follows a synthetic voice. Pass null to hold the mouth still.
+   */
+  audio?: AudioLevelSource | null;
   className?: string;
   style?: CSSProperties;
 }
@@ -326,6 +336,8 @@ export function AgentFace(props: AgentFaceProps) {
   const ornamentScale = showOrnament && ornament !== "typing" ? ORNAMENT_SCALE : 1;
   const spec = STATE_MOTION[state];
   const confetti = live && STATE_CONFETTI[state] === true;
+  const voice = isVoiceState(state);
+  const levelRef = useFaceLevel(live && voice && !(reducedMotion === undefined && reducedMotionQuery()?.matches === true), state === "speaking", props.audio, seedKey);
 
   useEffect(() => {
     if (!live) return;
@@ -339,10 +351,12 @@ export function AgentFace(props: AgentFaceProps) {
     performer.setAnchor(anchor);
     performer.set({ state, expression: expression ?? null });
     body.set(spec.kind, spec.duration, spec.loop);
+    body.setShape(finalShape);
     glyph.set(finalShape, state);
     const bodyPath = SHAPE_PATHS[finalShape];
     const parts = collectParts(root);
     let riding = false;
+    const mouthModel = new MouthModel();
     let off: (() => void) | null = null;
     let paused = false;
     const start = () => {
@@ -361,8 +375,11 @@ export function AgentFace(props: AgentFaceProps) {
           performer.setAnchor(anchor);
           riding = false;
         }
+        const level = voice ? levelRef.current : null;
+        const amount = level ? level.update(now) : 0;
+        performer.setVoice(voice ? { state, level: amount, mouth: level && state === "speaking" ? mouthModel.update(amount, level.bands, dt) : null } : null);
         const painted = performer.update(now, dt);
-        const pose = body.update(now, dt);
+        const pose = body.update(now, dt, amount);
         return () => {
           if (painted) paintFace(parts, painted);
           paintBody(parts, pose, bottom, ornamentScale);
@@ -384,7 +401,7 @@ export function AgentFace(props: AgentFaceProps) {
       unwarm?.();
       stop();
     };
-  }, [live, reducedMotion, seedKey, state, expression, anchor, showMouth, bottom, ornamentScale, spec, finalShape, glyphCapable]);
+  }, [live, reducedMotion, seedKey, state, expression, anchor, showMouth, bottom, ornamentScale, spec, finalShape, glyphCapable, voice]);
 
   return (
     <span

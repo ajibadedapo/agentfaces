@@ -4,10 +4,12 @@ import { tempo } from "./tempo";
 export const CORE_STATES = ["idle", "thinking", "working", "needs-you", "done", "alert", "celebrate", "sleeping"] as const;
 export const EXTENDED_STATES = ["starting", "attentive", "exploring", "waiting", "handing-off", "heads-up"] as const;
 export const ORNAMENT_STATES = ["typing", "running", "monitoring", "background"] as const;
-export const AGENT_STATES = [...CORE_STATES, ...EXTENDED_STATES, ...ORNAMENT_STATES] as const;
+export const VOICE_STATES = ["listening", "speaking"] as const;
+export const AGENT_STATES = [...CORE_STATES, ...EXTENDED_STATES, ...ORNAMENT_STATES, ...VOICE_STATES] as const;
 
 export type CoreAgentState = (typeof CORE_STATES)[number];
 export type AgentState = (typeof AGENT_STATES)[number];
+export type VoiceState = (typeof VOICE_STATES)[number];
 export type OrnamentKind = "typing" | "spinner" | "ripple" | "tracker";
 
 export const STATE_LABEL: Record<AgentState, string> = {
@@ -29,9 +31,11 @@ export const STATE_LABEL: Record<AgentState, string> = {
   running: "Running",
   monitoring: "Monitoring",
   background: "Working in the background",
+  listening: "Listening",
+  speaking: "Speaking",
 };
 
-export type MotionKind = "breathe" | "bob" | "tilt" | "pulse" | "hop" | "squash" | "turn";
+export type MotionKind = "breathe" | "bob" | "tilt" | "pulse" | "hop" | "squash" | "turn" | "lean" | "talk";
 
 export interface StateMotion {
   kind: MotionKind;
@@ -60,6 +64,8 @@ export const STATE_MOTION: Record<AgentState, StateMotion> = {
   running: motion("breathe", 9),
   monitoring: motion("breathe", 9),
   background: motion("breathe", 9),
+  listening: motion("lean", 8),
+  speaking: motion("talk", 7),
 };
 
 export interface StateExpressions {
@@ -88,7 +94,11 @@ export const STATE_EXPRESSIONS: Record<AgentState, StateExpressions> = {
   running: pool(["intent", "resolute", "calm"], 10),
   monitoring: pool(["watchful", "intrigued", "intent"], 9),
   background: pool(["intent", "pondering", "calm"], 10),
+  listening: pool(["heedful"], 10),
+  speaking: pool(["chatty", "glad", "calm"], 9),
 };
+
+export const STATE_FOCUS: Partial<Record<AgentState, number>> = { listening: 0.05, speaking: 0.5 };
 
 export const STATE_ORNAMENT: Partial<Record<AgentState, OrnamentKind>> = {
   typing: "typing",

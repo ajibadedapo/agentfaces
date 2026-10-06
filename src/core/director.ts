@@ -1,6 +1,6 @@
 import { EXPRESSION_NAMES, type ExpressionName } from "./expressions";
 import { createRng, type Rng } from "./random";
-import { STATE_EXPRESSIONS, type AgentState } from "./states";
+import { STATE_EXPRESSIONS, STATE_FOCUS, type AgentState } from "./states";
 
 export const BLINK_GAP = { min: 2500, max: 6000 } as const;
 export const BLINK_DURATION = 150;
@@ -55,6 +55,7 @@ export class Director {
     this.current = override ?? STATE_EXPRESSIONS[this.state].pool[0];
     this.pendingExpression = true;
     this.nextExpression = 0;
+    if (this.started && STATE_FOCUS[this.state] !== undefined) this.nextGaze = 0;
   }
 
   resume(now: number): void {
@@ -112,9 +113,13 @@ export class Director {
     return STATE_EXPRESSIONS[this.state].cadence * this.rng.range(0.8, 1.25);
   }
 
+  get focus(): number {
+    return STATE_FOCUS[this.state] ?? 1;
+  }
+
   private restGaze(): Cue {
     const angle = this.rng.range(0, Math.PI * 2);
-    const radius = this.rng.range(GAZE_REST.min, GAZE_REST.max);
+    const radius = this.rng.range(GAZE_REST.min, GAZE_REST.max) * this.focus;
     return { kind: "gaze", x: Math.cos(angle) * radius, y: Math.sin(angle) * radius * 0.7 };
   }
 }

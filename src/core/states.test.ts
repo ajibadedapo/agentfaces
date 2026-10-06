@@ -5,7 +5,7 @@ import { FACE_ANCHORS } from "./anchors";
 import { renderFaceSvg } from "./still";
 import { pathNumbers } from "./path";
 import { SHAPE_PATHS } from "./shapes";
-import { AGENT_STATES, CORE_STATES, EXTENDED_STATES, ORNAMENT_STATES, STATE_CONFETTI, STATE_EXPRESSIONS, STATE_LABEL, STATE_ORNAMENT, STATE_MOTION, placementVariant, restExpression } from "./states";
+import { AGENT_STATES, CORE_STATES, EXTENDED_STATES, ORNAMENT_STATES, VOICE_STATES, STATE_CONFETTI, STATE_EXPRESSIONS, STATE_LABEL, STATE_ORNAMENT, STATE_MOTION, placementVariant, restExpression } from "./states";
 import { tempo } from "./tempo";
 import type { ShapeName } from "./shapes";
 
@@ -22,11 +22,12 @@ describe("placementVariant", () => {
 });
 
 describe("states", () => {
-  it("leads with the core agent work states, then extended and ornament states", () => {
+  it("leads with the core agent work states, then extended, ornament and voice states", () => {
     expect(CORE_STATES).toEqual(["idle", "thinking", "working", "needs-you", "done", "alert", "celebrate", "sleeping"]);
     expect(EXTENDED_STATES).toEqual(["starting", "attentive", "exploring", "waiting", "handing-off", "heads-up"]);
     expect(ORNAMENT_STATES).toEqual(["typing", "running", "monitoring", "background"]);
-    expect(AGENT_STATES).toHaveLength(18);
+    expect(VOICE_STATES).toEqual(["listening", "speaking"]);
+    expect(AGENT_STATES).toHaveLength(20);
     expect(new Set(AGENT_STATES).size).toBe(AGENT_STATES.length);
   });
 

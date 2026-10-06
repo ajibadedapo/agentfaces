@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +7,8 @@ import { createServer } from "vite";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const output = process.argv[2] ?? join(root, "assets", "demo.gif");
+const pagePath = process.argv[3] ?? "demo.html";
+const stillsAt = (process.env.STILLS_AT ?? "").split(",").filter(Boolean).map(Number);
 const REEL_MS = 12000;
 const FPS = 20;
 const WIDTH = 640;
@@ -27,7 +29,7 @@ try {
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const page = await browser.newPage({ viewport: { width: 760, height: 320 }, deviceScaleFactor: 2, reducedMotion: "no-preference" });
   await page.clock.install({ time: 0 });
-  await page.goto("http://localhost:5199/agentfaces/demo.html");
+  await page.goto(`http://localhost:5199/agentfaces/${pagePath}`);
   await page.waitForSelector("#reel svg");
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 50);
   await page.evaluate(() => {
@@ -45,7 +47,10 @@ try {
         animation.currentTime = now - window.__reelBirth.get(animation);
       }
     }, (i + 1) * step);
-    await reel.screenshot({ path: join(frames, `${String(i).padStart(4, "0")}.png`) });
+    const frame = join(frames, `${String(i).padStart(4, "0")}.png`);
+    await reel.screenshot({ path: frame });
+    const at = Math.round((i + 1) * step);
+    if (stillsAt.some((ms) => Math.abs(ms - at) < step / 2)) copyFileSync(frame, output.replace(/\.gif$/, `-${at}ms.png`));
   }
   await browser.close();
   const palette = join(frames, "palette.png");

@@ -11,3 +11,4 @@ How each part was made:
 - **Timing** comes from a documented tempo scale (`tempo(step) = 400 ms * 2^(step / 3)`, rounded to 20 ms) and springs described by frequency and damping ratio.
 - **Confetti** is generated from a seeded random number generator (mulberry32 over an FNV-1a hash, both public domain).
 - **State and expression names** are our own vocabulary for agent work states.
+- **Voice** levels use a root mean square on a decibel scale with one-pole attack and release smoothing, both standard signal processing. The mouth mapping, band edges, synthetic voice and every timing constant in `src/core/audio.ts` and `src/core/voice.ts` were chosen for this project.

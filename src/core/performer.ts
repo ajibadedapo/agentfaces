@@ -2,6 +2,8 @@ import { Director, type Cue, type DirectorOptions } from "./director";
 import { EXPRESSIONS } from "./expressions";
 import { faceGeometry, fromVector, MOUTH_VECTOR_RANGE, toVector, type FaceAnchor, type FaceGeometry, type FacePose } from "./face";
 import { createRng } from "./random";
+import { applyVoice, type MouthShape } from "./voice";
+import type { AgentState } from "./states";
 import { FACE_SPRING, GAZE_SPRING, SACCADE_SPRING, stepSprings, TURN_SPRING } from "./spring";
 
 const BLINK_GAP = 60;
@@ -9,6 +11,13 @@ export const BLINK_CLOSE_SHARE = 0.32;
 export const GAZE_DRIFT = { x: 0.07, y: 0.05, periodX: 2300, periodY: 3100 } as const;
 export const HEAD_FOLLOW = 0.65;
 const SACCADE_SETTLE_DISTANCE = 0.06;
+const VOICE_EPSILON = 0.002;
+
+export interface VoiceInput {
+  state: AgentState;
+  level: number;
+  mouth: MouthShape | null;
+}
 
 export class Performer {
   readonly director: Director;
@@ -29,6 +38,8 @@ export class Performer {
   private blink: { start: number; count: number; duration: number } | null = null;
   private settled = false;
   private dirty = true;
+  private voice: VoiceInput | null = null;
+  private paintedVoice: VoiceInput | null = null;
 
   constructor(seed: string, anchor: FaceAnchor, options: DirectorOptions) {
     this.director = new Director(seed, options);
@@ -50,6 +61,10 @@ export class Performer {
     this.jitter = null;
     if (this.pendingMouth) this.pendingMouth.at = now;
     this.dirty = true;
+  }
+
+  setVoice(voice: VoiceInput | null): void {
+    this.voice = voice;
   }
 
   setAnchor(anchor: FaceAnchor): void {
@@ -87,10 +102,13 @@ export class Performer {
     const pose = this.pose(now);
     const transient = this.blink !== null || this.jitter !== null || this.pendingMouth !== null;
     const moving = !faceSettled || !gazeSettled || !headSettled || transient;
-    if (!moving && this.settled && !this.dirty) return null;
+    const voiceChanged = voiceDiffers(this.voice, this.paintedVoice);
+    if (!moving && this.settled && !this.dirty && !voiceChanged) return null;
     this.settled = !moving;
     this.dirty = false;
-    return faceGeometry(fromVector(this.values), this.anchor, pose);
+    this.paintedVoice = this.voice;
+    const params = fromVector(this.values);
+    return faceGeometry(this.voice ? applyVoice(params, this.voice.state, this.voice.level, this.voice.mouth) : params, this.anchor, pose);
   }
 
   private applyMouth(vector: number[]): void {
@@ -152,8 +170,17 @@ export class Performer {
         jy = this.jitter.y * amount;
       }
     }
-    const driftX = GAZE_DRIFT.x * Math.sin((now / GAZE_DRIFT.periodX) * Math.PI * 2 + this.driftPhase[0]);
-    const driftY = GAZE_DRIFT.y * Math.sin((now / GAZE_DRIFT.periodY) * Math.PI * 2 + this.driftPhase[1]);
+    const focus = this.director.focus;
+    const driftX = GAZE_DRIFT.x * focus * Math.sin((now / GAZE_DRIFT.periodX) * Math.PI * 2 + this.driftPhase[0]);
+    const driftY = GAZE_DRIFT.y * focus * Math.sin((now / GAZE_DRIFT.periodY) * Math.PI * 2 + this.driftPhase[1]);
     return { blink, gazeX: this.gaze[0] + jx + driftX, gazeY: this.gaze[1] + jy + driftY, turn: this.head[0] };
   }
+}
+
+function voiceDiffers(a: VoiceInput | null, b: VoiceInput | null): boolean {
+  if (a === b) return false;
+  if (!a || !b) return true;
+  if (a.state !== b.state || Math.abs(a.level - b.level) > VOICE_EPSILON) return true;
+  if (!a.mouth || !b.mouth) return a.mouth !== b.mouth;
+  return Math.abs(a.mouth.open - b.mouth.open) > VOICE_EPSILON || Math.abs(a.mouth.width - b.mouth.width) > VOICE_EPSILON;
 }

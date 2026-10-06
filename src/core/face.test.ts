@@ -30,8 +30,8 @@ function pathBox(d: string): [number, number, number, number] {
 }
 
 describe("expressions", () => {
-  it("defines our twenty six named expressions", () => {
-    expect(EXPRESSION_NAMES).toHaveLength(26);
+  it("defines our twenty eight named expressions", () => {
+    expect(EXPRESSION_NAMES).toHaveLength(28);
     expect(new Set(EXPRESSION_NAMES).size).toBe(EXPRESSION_NAMES.length);
   });
 
