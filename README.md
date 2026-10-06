@@ -121,6 +121,10 @@ Below 64 px the face grows inside the body and simplifies. From 36 px down the e
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md). Releases are automated with changesets and published from CI with npm provenance.
 
+## Verifying a release
+
+Every version is built and published by the [release workflow](./.github/workflows/release.yml) on GitHub Actions with npm provenance, so each tarball is signed and linked to the commit and run that produced it. After installing, run `npm audit signatures` in your project to check the registry signatures and provenance attestations, or open the Provenance section on the package page at [npmjs.com/package/agentfaces](https://www.npmjs.com/package/agentfaces).
+
 ## License
 
 [MIT](./LICENSE). Created by [Hammed Ajibade](https://github.com/ajibadedapo). Built at Specvista. See [PROVENANCE.md](./PROVENANCE.md) for how the artwork and motion were made.
