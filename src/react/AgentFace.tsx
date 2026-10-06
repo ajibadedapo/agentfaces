@@ -351,6 +351,7 @@ export function AgentFace(props: AgentFaceProps) {
     performer.setAnchor(anchor);
     performer.set({ state, expression: expression ?? null });
     body.set(spec.kind, spec.duration, spec.loop);
+    body.setShape(finalShape);
     glyph.set(finalShape, state);
     const bodyPath = SHAPE_PATHS[finalShape];
     const parts = collectParts(root);

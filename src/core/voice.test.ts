@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FACE_ANCHORS } from "./anchors";
-import { BodyPerformer } from "./body";
+import { BodyPerformer, LEAN_TILT } from "./body";
 import { Director, GAZE_REST } from "./director";
 import { EXPRESSIONS, validateFace } from "./expressions";
 import { faceGeometry, REST_POSE } from "./face";
@@ -162,7 +162,20 @@ describe("BodyPerformer voice motion", () => {
     }
     expect(a.scaleX).toBeGreaterThan(1);
     expect(b.scaleX).toBeGreaterThan(a.scaleX);
-    expect(a.rotate).toBeLessThan(0);
+    expect(a.rotate).toBeCloseTo(LEAN_TILT.circle);
+  });
+
+  it("tilts only the circle while listening and keeps straight-edged shapes upright", () => {
+    expect(LEAN_TILT).toEqual({ circle: -1.25, triangle: 0, square: 0 });
+    for (const shape of SHAPES) {
+      const body = new BodyPerformer("t", "lean", STATE_MOTION.listening.duration, true);
+      body.setShape(shape);
+      let pose = body.update(0, 16, 0.5);
+      for (let t = 16; t < 2000; t += 16) pose = body.update(t, 16, 0.5);
+      expect(pose.rotate).toBeCloseTo(LEAN_TILT[shape], 3);
+      expect(pose.scaleX).toBeGreaterThan(1);
+      expect(pose.y).toBeGreaterThan(1);
+    }
   });
 
   it("nods up with the output level while speaking", () => {

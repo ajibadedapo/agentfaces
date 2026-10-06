@@ -1,5 +1,6 @@
 import { createRng } from "./random";
 import { stepSprings, type SpringConfig } from "./spring";
+import type { ShapeName } from "./shapes";
 import type { MotionKind } from "./states";
 
 export interface BodyPose {
@@ -27,7 +28,8 @@ export const LANDING_IMPULSE = 2.6;
 export const CROUCH = { share: 0.12, squash: -0.09 } as const;
 export const HOP_HEIGHT = 11;
 export const BOB_HEIGHT = 7;
-export const LEAN = { size: 1.035, sink: 1.6, tilt: -1.25, breath: 0.008, pulse: 0.05 } as const;
+export const LEAN = { size: 1.035, sink: 1.6, breath: 0.008, pulse: 0.05 } as const;
+export const LEAN_TILT: Record<ShapeName, number> = { circle: -1.25, triangle: 0, square: 0 };
 export const TALK = { nod: 2.6, swell: 0.022, sway: 1.4, breath: 0.01 } as const;
 
 const TAU = Math.PI * 2;
@@ -51,6 +53,7 @@ export class BodyPerformer {
   private squashVelocity = [0];
   private airborne = false;
   private finished = false;
+  private shape: ShapeName = "circle";
 
   constructor(seed: string, kind: MotionKind, duration: number, loop: boolean) {
     const rng = createRng(`body:${seed}`);
@@ -58,6 +61,10 @@ export class BodyPerformer {
     this.kind = kind;
     this.duration = duration;
     this.loop = loop;
+  }
+
+  setShape(shape: ShapeName): void {
+    this.shape = shape;
   }
 
   set(kind: MotionKind, duration: number, loop: boolean): void {
@@ -109,7 +116,7 @@ export class BodyPerformer {
         case "lean":
           targets.size = LEAN.size + LEAN.breath * wave + LEAN.pulse * clamp(level, 0, 1);
           targets.lift = LEAN.sink;
-          targets.rotate = LEAN.tilt;
+          targets.rotate = LEAN_TILT[this.shape];
           break;
         case "talk":
           targets.size = 1 + TALK.breath * wave + TALK.swell * clamp(level, 0, 1);

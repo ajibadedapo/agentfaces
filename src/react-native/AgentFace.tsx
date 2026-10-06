@@ -35,6 +35,7 @@ import {
   applyVoice,
   isVoiceState,
   LEAN,
+  LEAN_TILT,
   MouthModel,
   TALK,
   VOICE_MOUTH,
@@ -134,7 +135,7 @@ function useBodyValues(): BodyValues {
   return useRef<BodyValues>({ lift: new Animated.Value(0), sway: new Animated.Value(0), rotate: new Animated.Value(0), scale: new Animated.Value(1), squash: new Animated.Value(0), turn: new Animated.Value(0) }).current;
 }
 
-function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyValues, turnJs: Animated.Value): Animated.CompositeAnimation {
+function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyValues, turnJs: Animated.Value, shape: ShapeName): Animated.CompositeAnimation {
   const spring = (value: Animated.Value, toValue: number, config: SpringConfig, driver = true) => Animated.spring(value, { toValue, ...(driver ? native(config) : js(config)) });
   const timing = (value: Animated.Value, toValue: number, ms: number, easing = Easing.inOut(Easing.sin)) => Animated.timing(value, { toValue, duration: ms, easing, useNativeDriver: true });
   const hop = (height: number) =>
@@ -167,7 +168,7 @@ function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyVa
       break;
     case "lean":
       cycle = Animated.sequence([
-        Animated.parallel([spring(v.scale, LEAN.size, BODY_SPRINGS.size), spring(v.lift, LEAN.sink, BODY_SPRINGS.lift), spring(v.rotate, LEAN.tilt, BODY_SPRINGS.sway)]),
+        Animated.parallel([spring(v.scale, LEAN.size, BODY_SPRINGS.size), spring(v.lift, LEAN.sink, BODY_SPRINGS.lift), spring(v.rotate, LEAN_TILT[shape], BODY_SPRINGS.sway)]),
         timing(v.scale, LEAN.size + LEAN.breath, duration / 2),
         timing(v.scale, LEAN.size - LEAN.breath, duration / 2),
       ]);
@@ -675,10 +676,10 @@ export function AgentFace(props: AgentFaceProps) {
 
   useEffect(() => {
     if (!live) return;
-    const animation = bodyMotion(spec.kind, spec.duration, spec.loop, body, turnJs);
+    const animation = bodyMotion(spec.kind, spec.duration, spec.loop, body, turnJs, finalShape);
     animation.start();
     return () => animation.stop();
-  }, [live, spec, body, turnJs]);
+  }, [live, spec, body, turnJs, finalShape]);
 
   if (!live) {
     const geometry = faceGeometry(EXPRESSIONS[expression ?? restExpression(state)], anchor);
