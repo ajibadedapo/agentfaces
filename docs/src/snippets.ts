@@ -46,7 +46,8 @@ const assistant = useVoiceAssistant();
 
 <AgentFace {...liveKitFace(assistant)} name="Assistant" />;`;
 
-export const VOICE_OPENAI = `import { RealtimeSession } from "@openai/agents-realtime";
+export const VOICE_OPENAI = `import { OpenAIRealtimeWebRTC, RealtimeSession } from "@openai/agents-realtime";
+import { AgentFace } from "agentfaces/react";
 import { bindRealtimeSession } from "agentfaces/openai-realtime";
 
 const audioElement = new Audio();
@@ -56,6 +57,7 @@ const unbind = bindRealtimeSession(session, setState);
 <AgentFace state={state} audio={audioElement} />;`;
 
 export const VOICE_ELEVENLABS = `import { useConversation } from "@elevenlabs/react";
+import { AgentFace } from "agentfaces/react";
 import { elevenLabsFace } from "agentfaces/elevenlabs";
 
 const conversation = useConversation();
