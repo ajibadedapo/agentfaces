@@ -1,0 +1,41 @@
+[
+  {
+    "name": "agentfaces (faceFor + renderFaceSvg)",
+    "path": "dist/index.js",
+    "import": "{ faceFor, renderFaceSvg }",
+    "limit": "9 kB"
+  },
+  {
+    "name": "agentfaces (everything)",
+    "path": "dist/index.js",
+    "import": "*",
+    "limit": "18 kB"
+  },
+  {
+    "name": "agentfaces/svg",
+    "path": "dist/svg/index.js",
+    "import": "{ renderFaceSvg, buildFaceSet }",
+    "limit": "8 kB"
+  },
+  {
+    "name": "agentfaces/react",
+    "path": "dist/react/index.js",
+    "import": "{ AgentFace }",
+    "ignore": [
+      "react",
+      "react-dom"
+    ],
+    "limit": "19 kB"
+  },
+  {
+    "name": "agentfaces/react-native",
+    "path": "dist/react-native/index.js",
+    "import": "{ AgentFace }",
+    "ignore": [
+      "react",
+      "react-native",
+      "react-native-svg"
+    ],
+    "limit": "19 kB"
+  }
+]

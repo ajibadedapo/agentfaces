@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a state, expression, renderer or API change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: Describe the use case first, then the change you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behaviour
+      render: tsx

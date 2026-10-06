@@ -1,0 +1,163 @@
+{
+  "name": "agentfaces",
+  "version": "0.0.0",
+  "description": "Expressive faces for AI agents. Work states like thinking, working, needs you and done, for React, React Native and plain SVG.",
+  "keywords": [
+    "ai",
+    "agent",
+    "avatar",
+    "face",
+    "character",
+    "mascot",
+    "status",
+    "react",
+    "react-native",
+    "svg",
+    "animation"
+  ],
+  "license": "MIT",
+  "author": "Hammed Ajibade",
+  "homepage": "https://ajibadedapo.github.io/agentfaces/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajibadedapo/agentfaces.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ajibadedapo/agentfaces/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      },
+      "require": {
+        "types": "./dist/react/index.d.cts",
+        "default": "./dist/react/index.cjs"
+      }
+    },
+    "./react-native": {
+      "react-native": "./dist/react-native/index.js",
+      "import": {
+        "types": "./dist/react-native/index.d.ts",
+        "default": "./dist/react-native/index.js"
+      },
+      "require": {
+        "types": "./dist/react-native/index.d.cts",
+        "default": "./dist/react-native/index.cjs"
+      }
+    },
+    "./svg": {
+      "import": {
+        "types": "./dist/svg/index.d.ts",
+        "default": "./dist/svg/index.js"
+      },
+      "require": {
+        "types": "./dist/svg/index.d.cts",
+        "default": "./dist/svg/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/react/index.d.ts"
+      ],
+      "react-native": [
+        "./dist/react-native/index.d.ts"
+      ],
+      "svg": [
+        "./dist/svg/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "PROVENANCE.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p docs/tsconfig.json",
+    "lint": "eslint . && node scripts/check-text.mjs",
+    "size": "size-limit",
+    "export:stills": "tsx scripts/export-stills.ts",
+    "render:images": "tsx scripts/render-images.ts",
+    "docs:dev": "vite --config docs/vite.config.ts",
+    "docs:build": "vite build --config docs/vite.config.ts",
+    "docs:preview": "vite preview --config docs/vite.config.ts",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.72",
+    "react-native-svg": ">=13"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.31.1",
+    "@eslint/js": "^9.39.5",
+    "@resvg/resvg-js": "^2.6.2",
+    "@size-limit/preset-small-lib": "^11.2.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^20.19.19",
+    "@types/react": "^19.1.17",
+    "@types/react-dom": "^19.1.11",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.1.4",
+    "react-dom": "^19.1.4",
+    "react-native": "^0.81.6",
+    "react-native-svg": "^15.12.1",
+    "size-limit": "^11.2.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^6.4.4",
+    "vitest": "^3.2.4"
+  }
+}

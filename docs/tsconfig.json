@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "agentfaces": ["./src/index.ts"],
+      "agentfaces/react": ["./src/react/index.ts"],
+      "agentfaces/svg": ["./src/svg/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

@@ -1,0 +1,35 @@
+name: Bug report
+description: Something renders or behaves incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The smallest code that shows the problem, or a link to a sandbox.
+      render: tsx
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: Entry point
+      options:
+        - agentfaces/react
+        - agentfaces/react-native
+        - agentfaces/svg
+        - agentfaces (core)
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: agentfaces, react, react-native and react-native-svg versions, plus browser or device.
