@@ -239,6 +239,26 @@ const PROPS: Array<[string, string, string, string]> = [
   ["className, style", "", "", "Web only. Applied to the wrapping span."],
 ];
 
+const EXAMPLES: Array<[string, string, string]> = [
+  ["Vercel AI SDK chat", `${GITHUB}/tree/main/examples/vercel-ai-sdk`, "A Next.js chat that maps useChat status and tool calls to face states: submitted is thinking, streaming is typing, a running tool is working, an approval is needs you, a reply is done and an error is alert."],
+  ["React Native with Expo", `${GITHUB}/tree/main/examples/react-native-expo`, "One screen that switches a face between the core states, plus a row of seeded faces. Only react-native-svg is needed."],
+];
+
+function Examples() {
+  return (
+    <section id="examples">
+      <h2>Examples</h2>
+      <ul>
+        {EXAMPLES.map(([title, href, description]) => (
+          <li key={title}>
+            <a href={href}>{title}</a>: {description}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Api() {
   return (
     <section id="api">
@@ -320,6 +340,7 @@ export function App() {
           <a href="#quick-start">Quick start</a>
           <a href="#playground">Playground</a>
           <a href="#states">States</a>
+          <a href="#examples">Examples</a>
           <a href="#api">API</a>
           <a href={GITHUB}>GitHub</a>
         </div>
@@ -329,6 +350,7 @@ export function App() {
         <QuickStart />
         <Playground />
         <Gallery />
+        <Examples />
         <Api />
       </main>
       <footer>

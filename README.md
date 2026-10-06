@@ -5,9 +5,23 @@
 [![bundle size](https://img.shields.io/bundlejs/size/agentfaces)](https://bundlejs.com/?q=agentfaces)
 [![license](https://img.shields.io/npm/l/agentfaces.svg)](./LICENSE)
 
+<p align="center"><img src="https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/demo.gif" alt="Three agent faces moving through idle, thinking, working, needs you, alert, done and celebrate, with the body morphing into a question mark, an exclamation mark and a check mark" width="640"></p>
+
+**Give your AI agent a face: one component that shows thinking, working, needs you and done at a glance, on web and React Native.**
+
+```sh
+npm install agentfaces
+```
+
+```tsx
+import { AgentFace } from "agentfaces/react";
+
+<AgentFace state="thinking" />;
+```
+
 Expressive faces for AI agents. Show what an agent is doing (thinking, working, waiting on you, done) with a face people read at a glance. Works with React, React Native and plain SVG.
 
-![Core agent states](./assets/states.png)
+![Core agent states](https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/states.png)
 
 - **Agent work states**: idle, thinking, working, needs you, done, alert, celebrate and sleeping, plus ten more.
 - **Alive, not busy**: blinks, gaze drift, micro saccades, springy body motion, glyph morphs (the body becomes a `!`, `?` or check mark and back) and confetti on celebrate.
@@ -18,10 +32,6 @@ Expressive faces for AI agents. Show what an agent is doing (thinking, working, 
 [Docs and playground](https://ajibadedapo.github.io/agentfaces/)
 
 ## Quick start
-
-```sh
-npm install agentfaces
-```
 
 ```tsx
 import { AgentFace } from "agentfaces/react";
@@ -52,6 +62,15 @@ import { renderFaceSvg } from "agentfaces/svg";
 
 const svg = renderFaceSvg({ shape: "square", color: "#8B5CF6", state: "done", size: 64 });
 ```
+
+## Examples
+
+| Example | What it shows |
+| --- | --- |
+| [Vercel AI SDK chat](https://github.com/ajibadedapo/agentfaces/tree/main/examples/vercel-ai-sdk) | Next.js app that maps `useChat` status and tool calls (submitted, streaming, ready, error, approvals) to face states. |
+| [React Native with Expo](https://github.com/ajibadedapo/agentfaces/tree/main/examples/react-native-expo) | One screen that switches a face between the core states, plus a row of seeded faces. |
+
+Both install `agentfaces` from npm and are not part of the published package.
 
 ## Entry points
 
@@ -105,7 +124,7 @@ The provider also takes `variant`, `mouth`, `reducedMotion` and `labels` (to tra
 
 ## Expressions
 
-![Expressions](./assets/expressions.png)
+![Expressions](https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/expressions.png)
 
 `calm`, `glad`, `pleased`, `sly`, `playful`, `eager`, `giggling`, `cheering`, `overjoyed`, `smitten`, `bashful`, `flustered`, `wistful`, `serene`, `intrigued`, `pondering`, `intent`, `resolute`, `doubtful`, `puzzled`, `watchful`, `startled`, `uneasy`, `downcast`, `weary`, `drowsy`. Holding `smitten` morphs the body into a heart.
 
@@ -119,7 +138,7 @@ Below 64 px the face grows inside the body and simplifies. From 36 px down the e
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Releases are automated with changesets and published from CI with npm provenance.
+See [CONTRIBUTING.md](./CONTRIBUTING.md). `node scripts/record-demo.mjs` re-records the demo at the top of this README from `docs/demo.html` (needs Playwright and ffmpeg). Releases are automated with changesets and published from CI with npm provenance.
 
 ## Verifying a release
 

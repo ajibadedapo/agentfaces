@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
-const skip = new Set(["node_modules", "dist", ".git", "coverage"]);
+const skip = new Set(["node_modules", "dist", ".git", "coverage", ".next", ".expo"]);
 const binary = /\.(png|jpg|jpeg|gif|webp|ico|woff2?)$/i;
 const banned = [{ char: "\u2014", name: "em dash" }];
 const problems = [];
