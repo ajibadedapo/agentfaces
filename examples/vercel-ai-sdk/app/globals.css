@@ -1,0 +1,16 @@
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1c1b22; background: #fff; }
+.chat { max-width: 640px; margin: 0 auto; padding: 32px 20px; display: flex; flex-direction: column; gap: 20px; min-height: 100vh; box-sizing: border-box; }
+.agent { display: flex; align-items: center; gap: 16px; }
+.agent div { display: flex; flex-direction: column; gap: 2px; }
+.agent .status { color: #5f5e6a; font-size: 14px; }
+.messages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.messages li { padding: 10px 14px; border-radius: 14px; max-width: 85%; line-height: 1.5; }
+.messages li p { margin: 0; }
+.messages .user { align-self: flex-end; background: #1c1b22; color: #fff; }
+.messages .assistant { align-self: flex-start; background: #f6f5fa; }
+.tool { color: #5f5e6a; font-size: 14px; }
+.error { color: #c81e1e; }
+form { display: flex; gap: 8px; }
+input { flex: 1; font: inherit; padding: 10px 14px; border: 1px solid #e7e5ee; border-radius: 999px; }
+button { font: inherit; padding: 10px 18px; border: 0; border-radius: 999px; background: #1c1b22; color: #fff; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
