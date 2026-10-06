@@ -28,12 +28,13 @@ jobs:
       - run: npm ci
       - run: npm run lint && npm run typecheck && npm test && npm run build && npm run size
       - name: Open the release pull request or publish to npm
-        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        uses: changesets/action@3841a0683d3cfa6dae0f9bb335290003010fe3f0 # v1.9.0
         with:
-          version-script: npm run version-packages
-          publish-script: npm run release
-          pr-title: "Release: version packages"
-          commit-message: "Release: version packages"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: npm run version-packages
+          publish: npm run release
+          title: "Release: version packages"
+          commit: "Release: version packages"
+          createGithubReleases: true
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
