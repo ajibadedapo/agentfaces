@@ -210,7 +210,7 @@
     "jsdom": "^26.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-native": "^0.87.1",
+    "react-native": "^0.88.0",
     "react-native-svg": "^15.15.5",
     "size-limit": "^11.2.0",
     "tsup": "^8.5.1",
