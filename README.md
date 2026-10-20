@@ -5,7 +5,7 @@
 [![bundle size](https://img.shields.io/bundlejs/size/agentfaces)](https://bundlejs.com/?q=agentfaces)
 [![license](https://img.shields.io/npm/l/agentfaces.svg)](./LICENSE)
 
-<p align="center"><img src="https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/demo.gif" alt="Three agent faces moving through idle, thinking, working, needs you, alert, done and celebrate, with the body morphing into a question mark, an exclamation mark and a check mark" width="640"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/demo.gif" alt="Three agent faces moving through idle, thinking, working, needs you, alert, done and celebrate, with the body morphing into an exclamation mark and a check mark" width="640"></p>
 
 **Give your AI agent a face: one component that shows thinking, working, needs you and done at a glance, on web and React Native.**
 
@@ -24,7 +24,7 @@ Expressive faces for AI agents. Show what an agent is doing (thinking, working, 
 ![Core agent states](https://raw.githubusercontent.com/ajibadedapo/agentfaces/main/assets/states.png)
 
 - **Agent work states**: idle, thinking, working, needs you, done, alert, celebrate and sleeping, plus ten more.
-- **Alive, not busy**: blinks, gaze drift, micro saccades, springy body motion, glyph morphs (the body becomes a `!`, `?` or check mark and back) and confetti on celebrate.
+- **Alive, not busy**: blinks, gaze drift, micro saccades, springy body motion, glyph morphs (the body becomes a `!` or check mark and back) and confetti on celebrate.
 - **Accessible by default**: every face has an accessible name and respects reduced motion. The still variant runs no timers.
 - **Cheap at scale**: one shared ticker drives every face on screen, and off-screen faces pause.
 - **Zero runtime dependencies**, tree-shakeable ESM and CJS builds, full TypeScript types.
@@ -125,7 +125,7 @@ The provider also takes `variant`, `mouth`, `reducedMotion` and `labels` (to tra
 | Ornaments | `typing` (ellipsis), `running` (spinner), `monitoring` (ripple), `background` (tracker) |
 | Voice | `listening`, `speaking` |
 
-`alert`, `needs-you` and `done` morph the body into `!`, `?` and a check mark. `celebrate` throws confetti. Morphs, ornaments and confetti are skipped under reduced motion and in the still variant.
+`alert` and `done` morph the body into `!` and a check mark. `celebrate` throws confetti. Morphs, ornaments and confetti are skipped under reduced motion and in the still variant.
 
 ## Voice agents
 

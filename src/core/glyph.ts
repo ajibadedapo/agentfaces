@@ -8,7 +8,7 @@ import { stepSprings, type SpringConfig } from "./spring";
 import { springFromFeel, tempo } from "./tempo";
 import type { AgentState } from "./states";
 
-export type GlyphKind = "bang" | "question" | "check" | "heart";
+export type GlyphKind = "bang" | "check" | "heart";
 
 export interface GlyphFaceAnchor {
   cx: number;
@@ -43,12 +43,11 @@ export const GLYPH_FACE_FADE = 0.3;
 export const GLYPH_FIELD_SMOOTH = { radius: 4, passes: 3 } as const;
 export const GLYPH_GROWTH_STEP = 3;
 export const GLYPH_DOT_POP = { from: 0.76, to: 0.98 } as const;
-export const STATE_GLYPH: Partial<Record<AgentState, GlyphKind>> = { alert: "bang", "needs-you": "question", done: "check" };
+export const STATE_GLYPH: Partial<Record<AgentState, GlyphKind>> = { alert: "bang", done: "check" };
 export const EXPRESSION_GLYPH: Partial<Record<ExpressionName, GlyphKind>> = { smitten: "heart" };
 const glyphSchedule = (rest: number, hold: number, loop: boolean): GlyphSchedule => ({ rest: tempo(rest), hold: tempo(hold), loop });
 
 export const GLYPH_SCHEDULE: Partial<Record<AgentState, GlyphSchedule>> = {
-  "needs-you": glyphSchedule(8, 7, true),
   done: glyphSchedule(3, 7, false),
   alert: glyphSchedule(6, 6, true),
 };
@@ -59,15 +58,6 @@ const f = (n: number) => {
   const s = n.toFixed(2);
   return s === "-0.00" ? "0.00" : s;
 };
-
-function arcPoints(cx: number, cy: number, r: number, fromDeg: number, toDeg: number, steps: number): Point[] {
-  const out: Point[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((fromDeg + ((toDeg - fromDeg) * i) / steps) * Math.PI) / 180;
-    out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-  }
-  return out;
-}
 
 function linePoints(from: Point, to: Point, steps: number, skipFirst = true): Point[] {
   const out: Point[] = [];
@@ -186,50 +176,7 @@ export function dotBelowStroke(end: Point, endWidth: number): Circle {
   return { cx: end[0], cy: end[1] + half + GLYPH_DOT_GAP + r, r };
 }
 
-function cubicPoints(p0: Point, p1: Point, p2: Point, p3: Point, steps: number, skipFirst: boolean): Point[] {
-  const out: Point[] = [];
-  for (let i = skipFirst ? 1 : 0; i <= steps; i++) {
-    const t = i / steps;
-    const u = 1 - t;
-    out.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]);
-  }
-  return out;
-}
-
-export const QUESTION_HOOK = { cx: 51, cy: 31.5, r: 20.5, from: 177, to: 405, steps: 84 } as const;
-export const QUESTION_TAIL = { end: [50, 62] as Point, lead: 6, settle: 7, steps: 28 } as const;
-
 const bump = (t: number, at: number, spread: number) => Math.exp(-(((t - at) / spread) ** 2));
-
-export const QUESTION_GROWTH = { trim: 0.42, start: 0.5 } as const;
-
-const questionWidth = (t: number) => 12.6 + 3.4 * bump(t, 0.42, 0.2) + 1.2 * bump(t, 0, 0.07);
-
-function questionCentre(): Point[] {
-  const { cx, cy, r, from, to, steps } = QUESTION_HOOK;
-  const hook = arcPoints(cx, cy, r, from, to, steps);
-  const end = hook[hook.length - 1];
-  const angle = (to * Math.PI) / 180;
-  const lead: Point = [end[0] - Math.sin(angle) * QUESTION_TAIL.lead, end[1] + Math.cos(angle) * QUESTION_TAIL.lead];
-  const settle: Point = [QUESTION_TAIL.end[0], QUESTION_TAIL.end[1] - QUESTION_TAIL.settle];
-  return [...hook, ...cubicPoints(end, lead, settle, QUESTION_TAIL.end, QUESTION_TAIL.steps, true)];
-}
-
-function arcFractions(centre: readonly Point[]): number[] {
-  const lengths = [0];
-  for (let i = 1; i < centre.length; i++) lengths.push(lengths[i - 1] + Math.hypot(centre[i][0] - centre[i - 1][0], centre[i][1] - centre[i - 1][1]));
-  const total = lengths[lengths.length - 1] || 1;
-  return lengths.map((l) => l / total);
-}
-
-function questionOutline(): Polygon {
-  return strokeOutline(questionCentre(), questionWidth);
-}
-
-function questionGrowth(): GlyphGrowth {
-  const centre = questionCentre();
-  return { centre, halfWidths: arcFractions(centre).map((t) => questionWidth(t) / 2), trim: QUESTION_GROWTH.trim, start: QUESTION_GROWTH.start };
-}
 
 function checkOutline(): Polygon {
   const a: Point = [19, 52];
@@ -242,7 +189,6 @@ function checkOutline(): Polygon {
 
 export const GLYPHS: Record<GlyphKind, GlyphSpec> = {
   bang: { outline: bangOutline(), dot: dotBelowStroke(BANG_STEM.to, bangWidth(1)), face: null },
-  question: { outline: questionOutline(), dot: dotBelowStroke(QUESTION_TAIL.end, questionWidth(1)), face: null, growth: questionGrowth() },
   check: { outline: checkOutline(), dot: null, face: null },
   heart: { outline: heartOutline(), dot: null, face: { cx: 50, cy: 47, scale: 0.92 } },
 };

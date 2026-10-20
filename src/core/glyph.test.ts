@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FACE_ANCHORS } from "./anchors";
 import { EXPRESSIONS } from "./expressions";
 import { faceGeometry, REST_POSE, type FacePose } from "./face";
-import { bodyOutline, EXPRESSION_GLYPH, GLYPH_POINTS, GLYPH_SCHEDULE, GLYPHS, glyphAnchor, glyphDot, glyphDotStops, glyphFaceOpacity, glyphKindsFor, glyphOutline, GlyphPerformer, morphKeyframes, morphPath, morphTrack, QUESTION_HOOK, STATE_GLYPH, type GlyphKind } from "./glyph";
+import { bodyOutline, EXPRESSION_GLYPH, GLYPH_POINTS, GLYPH_SCHEDULE, GLYPHS, glyphAnchor, glyphDot, glyphDotStops, glyphFaceOpacity, glyphKindsFor, glyphOutline, GlyphPerformer, morphKeyframes, morphPath, morphTrack, STATE_GLYPH, type GlyphKind } from "./glyph";
 import { framePoints, MORPH_POINTS, polygonArea } from "./morph";
 import type { Polygon } from "./path";
 import { distanceToOutline, flattenPath, pathNumbers, pointInPolygons } from "./path";
@@ -53,9 +53,9 @@ function sharpestConvexTurn(poly: Polygon): number {
 }
 
 describe("glyph morphs", () => {
-  it("maps alert, needs you and done to a glyph, and smitten to the heart", () => {
+  it("maps alert and done to a glyph, keeps needs you as a face, and smitten to the heart", () => {
     expect(STATE_GLYPH.alert).toBe("bang");
-    expect(STATE_GLYPH["needs-you"]).toBe("question");
+    expect(STATE_GLYPH["needs-you"]).toBeUndefined();
     expect(STATE_GLYPH.done).toBe("check");
     expect(EXPRESSION_GLYPH.smitten).toBe("heart");
     for (const state of AGENT_STATES) expect(Boolean(GLYPH_SCHEDULE[state])).toBe(state in STATE_GLYPH);
@@ -83,7 +83,7 @@ describe("glyph morphs", () => {
     let area = 0;
     for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) area += outline[j][0] * outline[i][1] - outline[i][0] * outline[j][1];
     expect(Math.abs(area) / 2).toBeGreaterThan(kind === "heart" ? 3000 : 600);
-    expect(pointInPolygons([outline], 50, kind === "check" ? 68 : kind === "heart" ? 50 : kind === "question" ? 13 : 30)).toBe(true);
+    expect(pointInPolygons([outline], 50, kind === "check" ? 68 : kind === "heart" ? 50 : 30)).toBe(true);
   });
 
   it("resamples every body to the same point count so the morph interpolates point for point", () => {
@@ -128,22 +128,6 @@ describe("glyph morphs", () => {
         expect(polygonArea(frame), label).toBeGreaterThan(600);
         if (t > 0.08 && t < 0.92) expect(sharpestConvexTurn(frame), label).toBeLessThanOrEqual(ownCorner);
       }
-    }
-  });
-
-  it("builds the question mark from a parametric hook and a tangent-continuous tail", () => {
-    const outline = glyphOutline("question");
-    expect(pointInPolygons([outline], QUESTION_HOOK.cx, QUESTION_HOOK.cy)).toBe(false);
-    expect(pointInPolygons([outline], QUESTION_HOOK.cx + QUESTION_HOOK.r, QUESTION_HOOK.cy)).toBe(true);
-    expect(pointInPolygons([outline], QUESTION_HOOK.cx, QUESTION_HOOK.cy - QUESTION_HOOK.r)).toBe(true);
-    const growth = GLYPHS.question.growth!;
-    const centre = growth.centre;
-    for (let i = 2; i < centre.length; i++) {
-      const a = Math.atan2(centre[i - 1][1] - centre[i - 2][1], centre[i - 1][0] - centre[i - 2][0]);
-      const b = Math.atan2(centre[i][1] - centre[i - 1][1], centre[i][0] - centre[i - 1][0]);
-      let turn = Math.abs(b - a);
-      if (turn > Math.PI) turn = 2 * Math.PI - turn;
-      expect(turn).toBeLessThan(0.2);
     }
   });
 

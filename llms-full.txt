@@ -75,7 +75,7 @@ Accessible names (`STATE_LABEL`): Idle, Thinking, Working, Needs you, Done, Aler
 
 Behaviour worth knowing:
 
-- `alert`, `needs-you` and `done` periodically morph the body into `!`, `?` and a check mark and back.
+- `alert` and `done` periodically morph the body into `!` and a check mark and back.
 - `celebrate` throws confetti.
 - `done`, `starting` and `handing-off` play their body motion once; the others loop.
 - `listening` leans in and pulses with the user's voice; `speaking` moves the mouth with the agent's audio.
