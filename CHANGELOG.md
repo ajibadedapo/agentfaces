@@ -1,5 +1,11 @@
 # agentfaces
 
+## 0.3.0
+
+### Minor Changes
+
+- [#15](https://github.com/ajibadedapo/agentfaces/pull/15) [`3ea69b2`](https://github.com/ajibadedapo/agentfaces/commit/3ea69b2e8bd754f77aaac7046d4d787db976d412) Thanks [@ajibadedapo](https://github.com/ajibadedapo)! - `needs-you` no longer morphs the body into a question mark. The face stays on screen and shows the state's expressions. The `question` glyph kind and the `QUESTION_HOOK`, `QUESTION_TAIL` and `QUESTION_GROWTH` exports are removed.
+
 ## 0.2.1
 
 ### Patch Changes
