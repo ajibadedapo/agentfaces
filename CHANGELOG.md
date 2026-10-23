@@ -1,5 +1,11 @@
 # agentfaces
 
+## 0.4.0
+
+### Minor Changes
+
+- [#17](https://github.com/ajibadedapo/agentfaces/pull/17) [`e5996d9`](https://github.com/ajibadedapo/agentfaces/commit/e5996d95a05a4a1e21ba8213cc5240f2ca5a0d64) Thanks [@ajibadedapo](https://github.com/ajibadedapo)! - React Native: a `paused` prop stops the ticker and every loop without a remount. The face keeps its expression, ornament, glyph and size; loops and confetti finish their current cycle and then rest, and waking starts them again with their normal delays.
+
 ## 0.3.0
 
 ### Minor Changes
