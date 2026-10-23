@@ -107,6 +107,7 @@ export interface AgentFaceProps {
    * speaking is simulated: the mouth follows a synthetic voice. Pass null to hold the mouth still.
    */
   audio?: NativeAudioSource | null;
+  paused?: boolean;
   testID?: string;
 }
 
@@ -186,7 +187,12 @@ function bodyMotion(kind: MotionKind, duration: number, loop: boolean, v: BodyVa
       ]);
       break;
   }
-  return loop ? Animated.loop(cycle) : Animated.sequence([cycle, Animated.parallel([spring(v.lift, 0, BODY_SPRINGS.lift), spring(v.squash, 0, BODY_SPRINGS.squash), spring(v.rotate, 0, BODY_SPRINGS.sway), spring(v.scale, 1, BODY_SPRINGS.size), spring(v.turn, 0, BODY_SPRINGS.turn), spring(turnJs, 0, BODY_SPRINGS.turn, false)])]);
+  return loop ? Animated.loop(cycle) : Animated.sequence([cycle, bodyRest(v, turnJs)]);
+}
+
+function bodyRest(v: BodyValues, turnJs: Animated.Value): Animated.CompositeAnimation {
+  const spring = (value: Animated.Value, toValue: number, config: SpringConfig, driver = true) => Animated.spring(value, { toValue, ...(driver ? native(config) : js(config)) });
+  return Animated.parallel([spring(v.lift, 0, BODY_SPRINGS.lift), spring(v.squash, 0, BODY_SPRINGS.squash), spring(v.rotate, 0, BODY_SPRINGS.sway), spring(v.scale, 1, BODY_SPRINGS.size), spring(v.turn, 0, BODY_SPRINGS.turn), spring(turnJs, 0, BODY_SPRINGS.turn, false)]);
 }
 
 function bodyTransform(v: BodyValues, size: number, bottom: number, voice: Animated.Value, state: AgentState) {
@@ -244,6 +250,7 @@ interface LiveFaceProps {
   mouth: boolean;
   turn: Animated.Value;
   voiceOpen: Animated.Value | null;
+  paused: boolean;
   onExpression?: (name: ExpressionName) => void;
 }
 
@@ -275,7 +282,7 @@ function LiveEye({ from, to, shutLid, side, progress, blink, gaze, head, gazeBia
   );
 }
 
-function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voiceOpen, onExpression }: LiveFaceProps) {
+function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voiceOpen, paused, onExpression }: LiveFaceProps) {
   const onExpressionRef = useRef(onExpression);
   onExpressionRef.current = onExpression;
   const clipId = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -302,6 +309,14 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voic
   const head = useRef(new Animated.Value(0)).current;
   const latest = useRef(faces);
   latest.current = faces;
+  const running = useRef<Animated.CompositeAnimation[]>([]).current;
+
+  useEffect(
+    () => () => {
+      for (const animation of running.splice(0)) animation.stop();
+    },
+    [running],
+  );
 
   useEffect(() => {
     director.current?.director.set({ state, expression });
@@ -324,7 +339,7 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voic
   }, [faces, progress, mouthProgress]);
 
   useEffect(() => {
-    const running: Animated.CompositeAnimation[] = [];
+    if (paused) return;
     let nextDrift = 0;
     const run = (animation: Animated.CompositeAnimation) => {
       running.push(animation);
@@ -380,11 +395,8 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voic
         );
       }
     });
-    return () => {
-      off();
-      for (const animation of running.splice(0)) animation.stop();
-    };
-  }, [blink, gazeX, gazeY, jitterX, jitterY, head, driftX, driftY]);
+    return off;
+  }, [paused, running, blink, gazeX, gazeY, jitterX, jitterY, head, driftX, driftY]);
 
   const from = useMemo(() => faceGeometry(faces.from, anchor), [faces.from, anchor]);
   const to = useMemo(() => faceGeometry(faces.to, anchor), [faces.to, anchor]);
@@ -425,20 +437,47 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voic
 
 const LOOP_EASING = Easing.inOut(Easing.ease);
 
-function useLoop(duration: number, loop: boolean, delay = 0, easing: (value: number) => number = LOOP_EASING): Animated.Value {
+function useLoop(duration: number, loop: boolean, paused: boolean, delay = 0, easing: (value: number) => number = LOOP_EASING): Animated.Value {
   const t = useRef(new Animated.Value(0)).current;
+  const resumeFrom = useRef<number | null>(null);
   useEffect(() => {
-    t.setValue(0);
-    const run = Animated.timing(t, { toValue: 1, duration, easing, useNativeDriver: true });
-    const animation = Animated.sequence([Animated.delay(delay), loop ? Animated.loop(run) : run]);
-    animation.start();
-    return () => animation.stop();
+    resumeFrom.current = null;
   }, [t, duration, loop, delay, easing]);
+  useEffect(() => {
+    if (paused) return;
+    let current: Animated.CompositeAnimation | null = null;
+    let alive = true;
+    const play = (animation: Animated.CompositeAnimation, then?: () => void) => {
+      current = animation;
+      animation.start(({ finished }) => {
+        if (finished && alive) then?.();
+      });
+    };
+    const run = () => Animated.timing(t, { toValue: 1, duration, easing, useNativeDriver: true });
+    const cycle = () => {
+      t.setValue(0);
+      play(loop ? Animated.loop(run()) : run());
+    };
+    const from = resumeFrom.current;
+    if (from === null) {
+      t.setValue(0);
+      play(Animated.sequence([Animated.delay(delay), loop ? Animated.loop(run()) : run()]));
+    } else if (from < 1) {
+      play(Animated.timing(t, { toValue: 1, duration: duration * (1 - from), easing: Easing.linear, useNativeDriver: true }), loop ? cycle : undefined);
+    } else if (loop) cycle();
+    return () => {
+      alive = false;
+      current?.stop();
+      t.stopAnimation((value) => {
+        resumeFrom.current = value;
+      });
+    };
+  }, [t, duration, loop, delay, easing, paused]);
   return t;
 }
 
-function Ring({ size, color, delay }: { size: number; color: string; delay: number }) {
-  const t = useLoop(1800, true, delay);
+function Ring({ size, color, delay, paused }: { size: number; color: string; delay: number; paused: boolean }) {
+  const t = useLoop(1800, true, paused, delay);
   return (
     <Animated.View
       pointerEvents="none"
@@ -458,8 +497,8 @@ function Ring({ size, color, delay }: { size: number; color: string; delay: numb
   );
 }
 
-function Spinner({ size, children, duration }: { size: number; children: ReactNode; duration: number }) {
-  const t = useLoop(duration, true);
+function Spinner({ size, children, duration, paused }: { size: number; children: ReactNode; duration: number; paused: boolean }) {
+  const t = useLoop(duration, true, paused);
   return (
     <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: size, height: size, transform: [{ rotate: t.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }}>
       {children}
@@ -467,19 +506,19 @@ function Spinner({ size, children, duration }: { size: number; children: ReactNo
   );
 }
 
-function Dot({ size, x, y, delay }: { size: number; x: number; y: number; delay: number }) {
-  const t = useLoop(900, true, delay);
+function Dot({ size, x, y, delay, paused }: { size: number; x: number; y: number; delay: number; paused: boolean }) {
+  const t = useLoop(900, true, paused, delay);
   const r = size * 0.03;
   return <Animated.View pointerEvents="none" style={{ position: "absolute", left: x - r, top: y - r, width: r * 2, height: r * 2, borderRadius: r, backgroundColor: FACE_COLORS.sclera, transform: [{ translateY: t.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, -size * 0.04, 0] }) }] }} />;
 }
 
-function Ornament({ kind, size, color, anchor }: { kind: OrnamentKind; size: number; color: string; anchor: FaceAnchor }) {
+function Ornament({ kind, size, color, anchor, paused }: { kind: OrnamentKind; size: number; color: string; anchor: FaceAnchor; paused: boolean }) {
   switch (kind) {
     case "tracker":
       return (
         <>
           <View pointerEvents="none" style={{ position: "absolute", left: size * 0.04, top: size * 0.04, width: size * 0.92, height: size * 0.92, borderRadius: size, borderWidth: Math.max(1, size * 0.012), borderColor: color, opacity: 0.28 }} />
-          <Spinner size={size} duration={1600}>
+          <Spinner size={size} duration={1600} paused={paused}>
             <View style={{ position: "absolute", left: size / 2 - size * 0.036, top: size * 0.004, width: size * 0.072, height: size * 0.072, borderRadius: size, backgroundColor: color }} />
           </Spinner>
         </>
@@ -487,15 +526,15 @@ function Ornament({ kind, size, color, anchor }: { kind: OrnamentKind; size: num
     case "ripple":
       return (
         <>
-          <Ring size={size} color={color} delay={0} />
-          <Ring size={size} color={color} delay={900} />
+          <Ring size={size} color={color} delay={0} paused={paused} />
+          <Ring size={size} color={color} delay={900} paused={paused} />
         </>
       );
     case "spinner":
       return (
         <>
           <View pointerEvents="none" style={{ position: "absolute", left: size * 0.04, top: size * 0.04, width: size * 0.92, height: size * 0.92, borderRadius: size, borderWidth: Math.max(1.5, size * 0.03), borderColor: color, opacity: 0.18 }} />
-          <Spinner size={size} duration={1200}>
+          <Spinner size={size} duration={1200} paused={paused}>
             <Svg viewBox="0 0 100 100" width={size} height={size}>
               <Circle cx="50" cy="50" r="46" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeDasharray="72 217" />
             </Svg>
@@ -506,9 +545,9 @@ function Ornament({ kind, size, color, anchor }: { kind: OrnamentKind; size: num
       const y = ((anchor.cy + MOUTH_OFFSET_Y * anchor.scale) / 100) * size;
       return (
         <>
-          <Dot size={size} x={size * 0.41} y={y} delay={0} />
-          <Dot size={size} x={size * 0.5} y={y} delay={150} />
-          <Dot size={size} x={size * 0.59} y={y} delay={300} />
+          <Dot size={size} x={size * 0.41} y={y} delay={0} paused={paused} />
+          <Dot size={size} x={size * 0.5} y={y} delay={150} paused={paused} />
+          <Dot size={size} x={size * 0.59} y={y} delay={300} paused={paused} />
         </>
       );
     }
@@ -530,8 +569,8 @@ function confettiShapeStyle(piece: ConfettiPiece, color: string, unit: number) {
   }
 }
 
-function ConfettiBit({ size, piece, bodyColor, palette }: { size: number; piece: ConfettiPiece; bodyColor: string; palette: readonly string[] }) {
-  const t = useLoop(piece.duration, true, piece.delay, Easing.linear);
+function ConfettiBit({ size, piece, bodyColor, palette, paused }: { size: number; piece: ConfettiPiece; bodyColor: string; palette: readonly string[]; paused: boolean }) {
+  const t = useLoop(piece.duration, true, paused, piece.delay, Easing.linear);
   const unit = size / 100;
   const shape = confettiShapeStyle(piece, confettiColor(piece, bodyColor, palette), unit);
   const span = 6 * unit;
@@ -566,31 +605,56 @@ interface GlyphDrive {
   progress: Animated.Value;
 }
 
-function useGlyph(state: AgentState, live: boolean, love: boolean): GlyphDrive {
+function useGlyph(state: AgentState, live: boolean, love: boolean, paused: boolean): GlyphDrive {
   const progress = useRef(new Animated.Value(0)).current;
   const stateKind = STATE_GLYPH[state] ?? null;
   const schedule = GLYPH_SCHEDULE[state];
   const wanted: GlyphKind | null = live ? (love ? "heart" : stateKind) : null;
   const [drawn, setDrawn] = useState<GlyphKind | null>(wanted);
   if (wanted && wanted !== drawn) setDrawn(wanted);
+  const played = useRef<{ schedule: typeof schedule; finished: boolean } | null>(null);
   useEffect(() => {
     if (!live) {
       progress.setValue(0);
       setDrawn(null);
+      played.current = null;
       return;
     }
     const spring = (toValue: number) => Animated.spring(progress, { toValue, ...js(GLYPH_SPRING) });
-    let animation: Animated.CompositeAnimation;
+    let animation: Animated.CompositeAnimation | null;
+    let onFinish: (() => void) | undefined;
     if (love) animation = spring(1);
     else if (stateKind && schedule) {
-      const cycle = Animated.sequence([spring(0), Animated.delay(schedule.rest), spring(1), Animated.delay(schedule.hold), spring(0)]);
-      animation = schedule.loop ? Animated.loop(cycle) : cycle;
-    } else animation = spring(0);
-    animation.start(({ finished }) => {
-      if (finished && !love && !stateKind) setDrawn(null);
+      const record = played.current?.schedule === schedule ? played.current : null;
+      if (paused) {
+        if (!record) played.current = { schedule, finished: false };
+        animation = record?.finished ? null : spring(1);
+      } else if (!record) {
+        played.current = { schedule, finished: false };
+        const cycle = Animated.sequence([spring(0), Animated.delay(schedule.rest), spring(1), Animated.delay(schedule.hold), spring(0)]);
+        animation = schedule.loop ? Animated.loop(cycle) : cycle;
+      } else if (record.finished) animation = null;
+      else {
+        const rest = Animated.sequence([spring(1), Animated.delay(schedule.hold), spring(0)]);
+        const cycle = Animated.sequence([Animated.delay(schedule.rest), spring(1), Animated.delay(schedule.hold), spring(0)]);
+        animation = schedule.loop ? Animated.sequence([rest, Animated.loop(cycle)]) : rest;
+      }
+      if (!schedule.loop)
+        onFinish = () => {
+          if (played.current?.schedule === schedule) played.current.finished = true;
+        };
+    } else {
+      played.current = null;
+      animation = spring(0);
+      onFinish = () => setDrawn(null);
+    }
+    if (!animation) return;
+    const started = animation;
+    started.start(({ finished }) => {
+      if (finished && (!paused || !stateKind)) onFinish?.();
     });
-    return () => animation.stop();
-  }, [live, love, stateKind, schedule, progress]);
+    return () => started.stop();
+  }, [live, love, stateKind, schedule, progress, paused]);
   return { kind: drawn, progress };
 }
 
@@ -598,13 +662,13 @@ export function AgentFace(props: AgentFaceProps) {
   const theme = useAgentFacesTheme();
   const face = resolveFace(props, theme);
   const { state, shape: finalShape, color: finalColor, seed, size, variant, mouth, accessibleName, reducedMotion, palette, expression } = face;
-  const { decorative = false, testID } = props;
+  const { decorative = false, testID, paused = false } = props;
   const systemReduced = useReducedMotion();
   const live = variant === "live" && !(reducedMotion ?? systemReduced);
   const spec = STATE_MOTION[state];
   const anchor = useMemo(() => anchorForSize(finalShape, size), [finalShape, size]);
   const [love, setLove] = useState(expression ? EXPRESSION_GLYPH[expression] === "heart" : false);
-  const glyph = useGlyph(state, live, love);
+  const glyph = useGlyph(state, live, love, paused);
   const glyphSpec = glyph.kind ? GLYPHS[glyph.kind] : null;
   const bodyPath = useMemo(() => {
     if (!glyph.kind) return null;
@@ -641,6 +705,7 @@ export function AgentFace(props: AgentFaceProps) {
       voiceOpen.setValue(0);
       return;
     }
+    if (paused) return;
     const mouthModel = new MouthModel();
     let last = 0;
     let driven = false;
@@ -667,19 +732,31 @@ export function AgentFace(props: AgentFaceProps) {
       off();
       for (const animation of running.splice(0)) animation.stop();
     };
-  }, [live, voice, state, voiceBody, voiceOpen, levelRef]);
+  }, [live, voice, paused, state, voiceBody, voiceOpen, levelRef]);
 
   useEffect(() => {
     if (!live) return;
     return warmMorphs(finalShape, glyphKindsFor(state, STATE_EXPRESSIONS[state].pool, expression));
   }, [live, finalShape, state, expression]);
 
+  const bodyPlayed = useRef<typeof spec | null>(null);
   useEffect(() => {
-    if (!live) return;
+    if (!live) {
+      bodyPlayed.current = null;
+      return;
+    }
+    if (paused) {
+      if (!spec.loop) bodyPlayed.current = spec;
+      const rest = bodyRest(body, turnJs);
+      rest.start();
+      return () => rest.stop();
+    }
+    if (!spec.loop && bodyPlayed.current === spec) return;
+    bodyPlayed.current = spec;
     const animation = bodyMotion(spec.kind, spec.duration, spec.loop, body, turnJs, finalShape);
     animation.start();
     return () => animation.stop();
-  }, [live, spec, body, turnJs, finalShape]);
+  }, [live, paused, spec, body, turnJs, finalShape]);
 
   if (!live) {
     const geometry = faceGeometry(EXPRESSIONS[expression ?? restExpression(state)], anchor);
@@ -696,20 +773,20 @@ export function AgentFace(props: AgentFaceProps) {
   const shrink = showOrnament && ornament !== "typing";
   return (
     <View testID={testID ?? "agentface-live"} {...a11y} style={{ width: size, height: size }}>
-      {showOrnament && ornament !== "typing" ? <Ornament kind={ornament} size={size} color={finalColor} anchor={anchor} /> : null}
+      {showOrnament && ornament !== "typing" ? <Ornament kind={ornament} size={size} color={finalColor} anchor={anchor} paused={paused} /> : null}
       <Animated.View style={{ width: size, height: size, transform: bodyTransform(body, size, SHAPE_BOUNDS[finalShape].maxY, voiceBody, state) }}>
         <Svg viewBox="0 0 100 100" width={size} height={size}>
           <G scale={shrink ? ORNAMENT_SCALE : 1} origin="50, 50">
             {bodyPath ? <AnimatedPath d={bodyPath} fill={finalColor} /> : <Path d={SHAPE_PATHS[finalShape]} fill={finalColor} />}
             {dotR && glyphSpec?.dot ? <AnimatedCircle cx={glyphSpec.dot.cx} cy={glyphSpec.dot.cy} r={dotR} fill={finalColor} /> : null}
             <AnimatedG opacity={faceOpacity} x={rideX} y={rideY} scale={rideScale} origin={`${anchor.cx}, ${anchor.cy}`}>
-              <LiveFace seedKey={seed} anchor={anchor} color={finalColor} state={state} expression={expression ?? null} mouth={showMouth} turn={turnJs} voiceOpen={voiceDriven && state === "speaking" ? voiceOpen : null} onExpression={(name) => setLove(EXPRESSION_GLYPH[name] === "heart")} />
+              <LiveFace seedKey={seed} anchor={anchor} color={finalColor} state={state} expression={expression ?? null} mouth={showMouth} turn={turnJs} voiceOpen={voiceDriven && state === "speaking" ? voiceOpen : null} paused={paused} onExpression={(name) => setLove(EXPRESSION_GLYPH[name] === "heart")} />
             </AnimatedG>
           </G>
         </Svg>
       </Animated.View>
-      {showOrnament && ornament === "typing" ? <Ornament kind="typing" size={size} color={finalColor} anchor={anchor} /> : null}
-      {STATE_CONFETTI[state] ? CONFETTI_PIECES.map((piece, i) => <ConfettiBit key={i} size={size} piece={piece} bodyColor={finalColor} palette={palette} />) : null}
+      {showOrnament && ornament === "typing" ? <Ornament kind="typing" size={size} color={finalColor} anchor={anchor} paused={paused} /> : null}
+      {STATE_CONFETTI[state] ? CONFETTI_PIECES.map((piece, i) => <ConfettiBit key={i} size={size} piece={piece} bodyColor={finalColor} palette={palette} paused={paused} />) : null}
     </View>
   );
 }
