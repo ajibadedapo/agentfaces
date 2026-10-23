@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render } from "@testing-library/react";
-import { morphKeyframes, SHAPE_PATHS } from "agentfaces";
+import { CONFETTI_FALL, CONFETTI_PIECES, morphKeyframes, SHAPE_PATHS } from "agentfaces";
 
 const fake = vi.hoisted(() => {
   type Done = (result: { finished: boolean }) => void;
@@ -167,7 +167,7 @@ vi.mock("react-native", async () => {
       createAnimatedComponent: (Component: (props: Record<string, unknown>) => ReactNode) => (props: Record<string, unknown>) => React.createElement(Component, fake.resolve(props) as Record<string, unknown>),
       spring: fake.to("spring"),
       timing: fake.to("timing"),
-      delay: () => fake.leaf("delay", () => undefined),
+      delay: (ms: number) => fake.leaf(`delay:${ms}`, () => undefined),
       sequence: fake.sequence,
       parallel: fake.parallel,
       loop: fake.loop,
@@ -271,15 +271,47 @@ describe("AgentFace on React Native, paused", () => {
     expect(numbers(bodyPath(view.container))).toEqual(numbers(bang[bang.length - 1]));
   });
 
-  it("resumes confetti where it stopped instead of replaying the burst delay", async () => {
+  it("lets each confetti piece finish its fall when paused, then starts a fresh burst on wake", async () => {
     const view = await mount({ state: "celebrate" });
-    expect(fake.started).toContain("delay");
+    act(() => fake.step());
     view.update({ paused: true });
+    for (let i = 0; i < 4; i++) act(() => fake.step());
+    view.update({});
+    expect(fake.active.size).toBe(0);
     expect(fake.loops.size).toBe(0);
+    const unit = 96 / 100;
+    const pieces = Array.from(view.container.querySelectorAll("rn-animated-view")).map((node) => JSON.parse(node.getAttribute("rnstyle") ?? "{}")).filter((style) => style.width === 6 * unit);
+    expect(pieces).toHaveLength(CONFETTI_PIECES.length);
+    for (const piece of pieces) {
+      expect(piece.opacity).toBe(0);
+      expect(piece.transform[1].translateY).toBeCloseTo(CONFETTI_FALL * unit);
+    }
     fake.started.length = 0;
     view.update({ paused: false });
-    expect(fake.started).not.toContain("delay");
-    expect(fake.started).toContain("timing");
+    expect(fake.started.filter((kind) => kind.startsWith("delay:"))).toHaveLength(CONFETTI_PIECES.length);
+  });
+
+  it("keeps the ripple rings staggered when paused before the second ring starts", async () => {
+    const view = await mount({ state: "monitoring" });
+    view.update({ paused: true });
+    for (let i = 0; i < 3; i++) act(() => fake.step());
+    expect(fake.active.size).toBe(0);
+    fake.started.length = 0;
+    view.update({ paused: false });
+    expect(fake.started).toEqual(expect.arrayContaining(["delay:0", "delay:900"]));
+  });
+
+  it("lets the spinner finish its current turn instead of stopping mid-turn", async () => {
+    const view = await mount({ state: "running" });
+    act(() => fake.step());
+    const turning = [...fake.active].filter((item) => item.kind === "timing").length;
+    expect(turning).toBeGreaterThan(0);
+    fake.started.length = 0;
+    view.update({ paused: true });
+    expect([...fake.active].filter((item) => item.kind === "timing")).toHaveLength(turning);
+    for (let i = 0; i < 3; i++) act(() => fake.step());
+    expect(fake.active.size).toBe(0);
+    expect(fake.started.filter((kind) => kind === "timing")).toHaveLength(0);
   });
 
   it("does not replay a one-shot hop on resume", async () => {

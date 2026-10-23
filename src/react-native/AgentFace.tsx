@@ -437,47 +437,51 @@ function LiveFace({ seedKey, anchor, color, state, expression, mouth, turn, voic
 
 const LOOP_EASING = Easing.inOut(Easing.ease);
 
-function useLoop(duration: number, loop: boolean, paused: boolean, delay = 0, easing: (value: number) => number = LOOP_EASING): Animated.Value {
+function useLoop(duration: number, loop: boolean, paused: boolean, delay = 0, easing: (value: number) => number = LOOP_EASING, restAt = 1): Animated.Value {
   const t = useRef(new Animated.Value(0)).current;
-  const resumeFrom = useRef<number | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const running = useRef(false);
+  const begin = useRef<() => void>(() => undefined);
   useEffect(() => {
-    resumeFrom.current = null;
-  }, [t, duration, loop, delay, easing]);
-  useEffect(() => {
-    if (paused) return;
-    let current: Animated.CompositeAnimation | null = null;
     let alive = true;
-    const play = (animation: Animated.CompositeAnimation, then?: () => void) => {
+    let current: Animated.CompositeAnimation | null = null;
+    const play = (animation: Animated.CompositeAnimation, then: () => void) => {
       current = animation;
       animation.start(({ finished }) => {
-        if (finished && alive) then?.();
+        if (finished && alive) then();
       });
     };
-    const run = () => Animated.timing(t, { toValue: 1, duration, easing, useNativeDriver: true });
-    const cycle = () => {
-      t.setValue(0);
-      play(loop ? Animated.loop(run()) : run());
+    const rest = () => {
+      running.current = false;
+      if (restAt !== 1) t.setValue(restAt);
     };
-    const from = resumeFrom.current;
-    if (from === null) {
+    const cycle = () => {
+      if (pausedRef.current) return rest();
       t.setValue(0);
-      play(Animated.sequence([Animated.delay(delay), loop ? Animated.loop(run()) : run()]));
-    } else if (from < 1) {
-      play(Animated.timing(t, { toValue: 1, duration: duration * (1 - from), easing: Easing.linear, useNativeDriver: true }), loop ? cycle : undefined);
-    } else if (loop) cycle();
+      play(Animated.timing(t, { toValue: 1, duration, easing, useNativeDriver: true }), loop ? cycle : rest);
+    };
+    begin.current = () => {
+      if (running.current) return;
+      running.current = true;
+      t.setValue(0);
+      play(Animated.delay(delay), cycle);
+    };
+    if (!pausedRef.current) begin.current();
     return () => {
       alive = false;
+      running.current = false;
       current?.stop();
-      t.stopAnimation((value) => {
-        resumeFrom.current = value;
-      });
     };
-  }, [t, duration, loop, delay, easing, paused]);
+  }, [t, duration, loop, delay, easing, restAt]);
+  useEffect(() => {
+    if (!paused) begin.current();
+  }, [paused]);
   return t;
 }
 
 function Ring({ size, color, delay, paused }: { size: number; color: string; delay: number; paused: boolean }) {
-  const t = useLoop(1800, true, paused, delay);
+  const t = useLoop(1800, true, paused, delay, LOOP_EASING, 0);
   return (
     <Animated.View
       pointerEvents="none"
