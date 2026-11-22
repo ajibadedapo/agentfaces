@@ -1,5 +1,11 @@
 # agentfaces
 
+## 0.4.1
+
+### Patch Changes
+
+- [`165730a`](https://github.com/ajibadedapo/agentfaces/commit/165730aca08fb4ce9a35b5bfb355f097cedd087e) Thanks [@ajibadedapo](https://github.com/ajibadedapo)! - Docs: the README and provenance note credit Hammed Ajibade alone, without a company attribution.
+
 ## 0.4.0
 
 ### Minor Changes
