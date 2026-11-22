@@ -198,4 +198,4 @@ Every version is built and published by the [release workflow](./.github/workflo
 
 ## License
 
-[MIT](./LICENSE). Created by [Hammed Ajibade](https://github.com/ajibadedapo). Built at Specvista. See [PROVENANCE.md](./PROVENANCE.md) for how the artwork and motion were made.
+[MIT](./LICENSE). Created by [Hammed Ajibade](https://github.com/ajibadedapo). See [PROVENANCE.md](./PROVENANCE.md) for how the artwork and motion were made.

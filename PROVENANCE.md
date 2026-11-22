@@ -1,6 +1,6 @@
 # Provenance
 
-Agentfaces is an original implementation written by Hammed Ajibade at Specvista. It contains no third-party code, path data, fonts, images or other assets.
+Agentfaces is an original implementation written by Hammed Ajibade. It contains no third-party code, path data, fonts, images or other assets.
 
 How each part was made:
 

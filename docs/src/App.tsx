@@ -407,7 +407,7 @@ export function App() {
         <Api />
       </main>
       <footer>
-        MIT licensed. Created by Hammed Ajibade. Built at Specvista.
+        MIT licensed. Created by Hammed Ajibade.
       </footer>
     </>
   );
